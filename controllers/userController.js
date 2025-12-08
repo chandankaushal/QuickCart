@@ -6,12 +6,18 @@ let user_table = `"Users".users`;
 
 async function getUsers(req, res) {
   try {
-    const result = await pool.query(`SELECT * FROM ${user_table}`);
-
-    let formattedList = result.rows.map((user) => `name:${user.name}`);
-    res.json(formattedList);
-
-    client.release(); // Releasing connection to the pool
+    let { email } = req.query;
+    if (!email) {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Please provide a valid email" });
+    }
+    // Add Joi Validation here
+    let sql = `SELECT * FROM ${user_table} WHERE email = $1`;
+    let values = [email];
+    let response = await pool.query(sql, values);
+    console.log(response);
+    res.send("Hello");
   } catch (err) {
     console.error("DB Test Error:", err);
   }
@@ -37,15 +43,31 @@ async function createUser(req, res) {
       console.log("There was an error with insert", err);
       res.status(500).json({
         status: "error",
-        message: "Something went wrong, Please try again later",
+        message: "Something went wrong",
       });
     }
   }
 }
 
 async function deleteUser(req, res) {
-  const sql = `DELETE FROM ${user_table} WHERE `;
-  res.send("Delete User");
+  try {
+    let { email } = req.body;
+
+    const sql = `DELETE FROM ${user_table} WHERE email = $1`;
+    const values = [email];
+    let response = await pool.query(sql, values);
+    if (response.rowCount == 0) {
+      return res.status(400).json({
+        status: "error",
+        message: "No users exist with the email address you provided",
+      });
+    }
+    res
+      .status(200)
+      .json({ status: "success", message: "User deleted Successfully!" });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: err.message });
+  }
 }
 
 async function updateUser(req, res) {
