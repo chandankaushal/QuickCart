@@ -1,4 +1,4 @@
-function validateUserData(schema) {
+function validateData(schema) {
   return (req, res, next) => {
     const { error } = schema.validate(req.body);
     if (error) {
@@ -11,4 +11,4 @@ function validateUserData(schema) {
   };
 }
 
-module.exports = { validateUserData };
+module.exports = { validateData };
