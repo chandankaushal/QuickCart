@@ -1,8 +1,10 @@
 const pool = require("../db");
 const crypto = require("crypto");
-const uuid = crypto.randomUUID();
+const { validateEmail } = require("../utils/validEmail");
+const { hashPassword } = require("../utils/hash");
+const { userSchema } = require("../models/joiSchema");
 
-let user_table = `"Users".users`;
+let user_table = `"quickcart".users`;
 
 async function getUsers(req, res) {
   try {
@@ -10,49 +12,61 @@ async function getUsers(req, res) {
     if (!email) {
       return res
         .status(400)
-        .json({ status: "error", message: "Please provide a valid email" });
+        .json({ status: "error", message: "Email cannot be empty" });
     }
-    // Add Joi Validation here
-    let sql = `SELECT * FROM ${user_table} WHERE email = $1`;
-    let values = [email];
-    let response = await pool.query(sql, values);
-    console.log(response);
-    res.send("Hello");
+    let isValid = validateEmail(email);
+    if (isValid) {
+      let sql = `SELECT * FROM ${user_table} WHERE email = $1`;
+      let values = [email];
+      let response = await pool.query(sql, values);
+      // console.log(response);
+      if (response.rowCount >= 1) {
+        return res.status(200).json({
+          status: "success",
+          message: { name: response.rows[0].name, id: response.rows[0].id },
+        });
+      } else {
+        return res
+          .status(200)
+          .json({ status: "success", message: "No results" });
+      }
+    } else {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Your email is in invalid format" });
+    }
   } catch (err) {
     console.error("DB Test Error:", err);
   }
 }
 
-async function createUser(req, res) {
+async function registerUser(req, res) {
   console.log(req.body);
-  let { name, email } = req.body;
-  if (!name || !email) {
+  try {
+    validateUserData(req.body, res);
+    console.log("After");
+    let { name, email, password } = req.body;
+    const uuid = crypto.randomUUID();
+    let hashedPassword = await hashPassword(password);
+    const sql = `INSERT INTO ${user_table} (id,name,email,password) VALUES ($1,$2,$3,$4)`;
+    const values = [uuid, name, email, hashedPassword];
+    await pool.query(sql, values);
+
     return res
-      .status(400)
-      .json({ status: "error", message: "Please provide both name and email" });
-  } else {
-    try {
-      const sql = `INSERT INTO ${user_table} (id,name,email) VALUES ($1,$2,$3)`;
-      const values = [uuid, name, email];
-      let response = await pool.query(sql, values);
-      // console.log(`User Added`, response);
-      return res
-        .status(200)
-        .json({ status: "success", message: "User Inserted Successfully" });
-    } catch (err) {
-      console.log("There was an error with insert", err);
-      res.status(500).json({
-        status: "error",
-        message: "Something went wrong",
-      });
-    }
+      .status(200)
+      .json({ status: "success", message: "User Inserted Successfully" });
+  } catch (err) {
+    console.log("There was an error with insert", err);
+    res.status(500).json({
+      status: "error",
+      message: "Something went wrong",
+    });
   }
 }
 
 async function deleteUser(req, res) {
   try {
     let { email } = req.body;
-
     const sql = `DELETE FROM ${user_table} WHERE email = $1`;
     const values = [email];
     let response = await pool.query(sql, values);
@@ -74,4 +88,11 @@ async function updateUser(req, res) {
   res.send("Update User");
 }
 
-module.exports = { getUsers, createUser, deleteUser, updateUser };
+function validateUserData(value, res) {
+  const { error } = userSchema.validate(value);
+  if (error) {
+    return { status: 400, message: error.details[0].message };
+  }
+}
+
+module.exports = { getUsers, registerUser, deleteUser, updateUser };

@@ -2,13 +2,16 @@ const express = require("express");
 const router = express.Router();
 const {
   getUsers,
-  createUser,
+  registerUser,
   deleteUser,
   updateUser,
 } = require("../controllers/userController");
 
+const { validateUserData } = require("../middleware/validate");
+const { userSchema } = require("../models/joiSchema");
+
 router.get("/show", getUsers);
-router.post("/create", createUser);
+router.post("/register", validateUserData(userSchema), registerUser);
 router.put("/update", updateUser);
 router.delete("/delete", deleteUser);
 
