@@ -3,10 +3,12 @@ const crypto = require("crypto");
 const { validateEmail } = require("../utils/validEmail");
 const { hashPassword, comparePassword } = require("../utils/hash");
 const { userSchema } = require("../models/joiSchema");
+const { getToken } = require("../utils/auth");
 
 let user_table = `"quickcart".users`;
 
 async function getUsers(req, res) {
+  console.log(req);
   try {
     let { email } = req.query;
     if (!email) {
@@ -87,12 +89,27 @@ async function updateUser(req, res) {
 
 async function loginUser(req, res) {
   let { email, password } = req.body;
-  const sql = `SELECT password FROM ${user_table} WHERE email = $1`;
+
+  const sql = `SELECT id,name,email,role,password FROM ${user_table} WHERE email = $1`;
   let values = [email];
+
   const response = await pool.query(sql, values);
+
   let result = await comparePassword(password, response.rows[0].password);
   if (result) {
-    return res.status(200).json({ status: "success", message: "logged in" });
+    const User = {
+      id: response.rows[0].id,
+      email: response.rows[0].email,
+      role: response.rows[0].role,
+    };
+
+    return res
+      .status(200)
+      .json({
+        status: "success",
+        message: "logged in",
+        access_token: getToken(User),
+      });
   } else {
     return res
       .status(401)
