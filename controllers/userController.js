@@ -8,7 +8,6 @@ const { getToken } = require("../utils/auth");
 let user_table = `"quickcart".users`;
 
 async function getUsers(req, res) {
-  console.log(req);
   try {
     let { email } = req.query;
     if (!email) {
@@ -21,16 +20,18 @@ async function getUsers(req, res) {
       let sql = `SELECT * FROM ${user_table} WHERE email = $1`;
       let values = [email];
       let response = await pool.query(sql, values);
-      // console.log(response);
-      if (response.rowCount >= 1) {
+      console.log(response.rows[0]);
+      if (response.rowCount >= 1 && req.user.id == response.rows[0].id) {
         return res.status(200).json({
           status: "success",
           message: { name: response.rows[0].name, id: response.rows[0].id },
         });
       } else {
-        return res
-          .status(200)
-          .json({ status: "success", message: "No results" });
+        return res.status(400).json({
+          status: "error",
+          message:
+            "The requested user does not exist or you do not have permission to view them",
+        });
       }
     } else {
       return res
@@ -103,13 +104,11 @@ async function loginUser(req, res) {
       role: response.rows[0].role,
     };
 
-    return res
-      .status(200)
-      .json({
-        status: "success",
-        message: "logged in",
-        access_token: getToken(User),
-      });
+    return res.status(200).json({
+      status: "success",
+      message: "logged in",
+      access_token: getToken(User),
+    });
   } else {
     return res
       .status(401)

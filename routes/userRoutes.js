@@ -10,8 +10,9 @@ const {
 
 const { validateData } = require("../middleware/validate");
 const { userSchema, storeSchema } = require("../models/joiSchema");
+const { checkValidToken } = require("../middleware/auth");
 
-router.get("/show", getUsers);
+router.get("/show", checkValidToken, getUsers);
 router.post("/register", validateData(userSchema), registerUser);
 router.put("/update", updateUser);
 router.delete("/delete", deleteUser);
