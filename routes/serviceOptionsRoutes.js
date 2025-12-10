@@ -4,8 +4,9 @@ const {
   pickupServiceOptions,
   reserveServiceoption,
 } = require("../controllers/serviceOptionsController");
+const { checkValidToken } = require("../middleware/auth");
 
-router.post("/pickup", pickupServiceOptions);
-router.post("/reserve", reserveServiceoption);
+router.post("/pickup", checkValidToken, pickupServiceOptions);
+router.post("/reserve", checkValidToken, reserveServiceoption);
 
 module.exports = router;
