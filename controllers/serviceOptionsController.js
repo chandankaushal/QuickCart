@@ -23,6 +23,8 @@ async function reserveServiceoption(req, res) {
   let values = [false, service_option_id];
 
   let response = await pool.query(sql, values);
+
+  //Check if SO is already reserved and also return the hold id that can be used to place an order
   sendSuccess(res, "Reserved", null, 200);
 }
 
