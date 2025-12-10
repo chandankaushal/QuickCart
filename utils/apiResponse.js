@@ -5,12 +5,14 @@ function sendError(res, message, status = 400) {
   });
 }
 
-function sendSuccess(res, message, data = {}, status = 200) {
-  return res.status(status).json({
+function sendSuccess(res, message = null, data = {}, status = 200) {
+  const response = {
     status: "success",
-    message,
-    data,
-  });
+  };
+  if (message) response.message = message;
+  if (data) response.data = data;
+
+  return res.status(status).json(response);
 }
 
 module.exports = { sendError, sendSuccess };
