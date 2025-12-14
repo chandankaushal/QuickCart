@@ -5,6 +5,7 @@ const userRoutes = require("./routes/userRoutes.js");
 const monitoringRoutes = require("./routes/monitoringRoutes.js");
 const storeRoutes = require("./routes/storeRoutes");
 const serviceOptionsRoutes = require("./routes/serviceOptionsRoutes");
+const productRoutes = require("./routes/productRoutes.js");
 
 const app = express();
 app.use(express.json());
@@ -16,6 +17,7 @@ app.use("/users", userRoutes);
 app.use("/monitoring", monitoringRoutes);
 app.use("/stores", storeRoutes);
 app.use("/service_options", serviceOptionsRoutes);
+app.use("/products", productRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
