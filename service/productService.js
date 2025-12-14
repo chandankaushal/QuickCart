@@ -1,7 +1,6 @@
 const Product = require("../models/productModel");
 const { GetupcFromItems } = require("../utils/items");
 async function checkProductStock(items, store_id) {
-  // console.log(items);
   let upcs = items.map((item) => item.upc);
 
   let result = await Product.getProductByUpc(upcs, store_id);
@@ -12,11 +11,18 @@ async function checkProductStock(items, store_id) {
   availableItems.forEach((item) => {
     dbMap[item.upc] = item;
   });
-  console.log(dbMap);
 
   const stockChecks = items.map((req) => {
     const prod = dbMap[req.upc];
-    console.log(`This is prod ${prod}`);
+
+    if (!prod) {
+      return {
+        upc: req.upc,
+        status: "item_not_found",
+      };
+    }
+
+    // console.log(`This is prod ${prod}`);
 
     if (prod.qty < req.qty) {
       return {
@@ -35,9 +41,13 @@ async function checkProductStock(items, store_id) {
     };
   });
 
-  return stockChecks;
+  let OutOfStockItems = stockChecks.filter((el) => el.status !== "ok");
+  if (OutOfStockItems.length > 0) {
+    return { data: OutOfStockItems, problems: true };
+  }
+  return { data: stockChecks, problems: false };
 }
-
+// will implement this in create_order
 async function updateQtyinDb(stockChecks) {
   if (stockChecks.status == "ok") {
     //Update DB
