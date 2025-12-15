@@ -1,12 +1,14 @@
 const jwt = require("jsonwebtoken");
+const { ExpressError, UnauthorizedError } = require("../utils/ExpressError");
 
 function checkValidToken(req, res, next) {
   let authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({
-      status: "error",
-      message: "No token provided",
-    });
+    throw new ExpressError(
+      "Auth Token missing or Invalid",
+      401,
+      "MISSING_OR_NO_TOKEN"
+    );
   }
 
   const token = authHeader.split(" ")[1];
@@ -15,10 +17,11 @@ function checkValidToken(req, res, next) {
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(401).json({
-      status: "error",
-      message: "Invalid or expired token",
-    });
+    throw new ExpressError(
+      "Auth Token Expired or Invalid",
+      401,
+      "Unauthorized"
+    );
   }
 }
 
