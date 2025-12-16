@@ -1,4 +1,4 @@
-const Product = require("../models/productModel");
+cogit;
 const { GetupcFromItems } = require("../utils/items");
 async function checkProductStock(items, store_id) {
   let upcs = items.map((item) => item.upc);

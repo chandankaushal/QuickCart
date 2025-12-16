@@ -10,37 +10,8 @@ let user_table = `"quickcart".users`;
 async function getUsers(req, res) {
   try {
     let { email } = req.query;
-    if (!email) {
-      return res
-        .status(400)
-        .json({ status: "error", message: "Email cannot be empty" });
-    }
-    let isValid = validateEmail(email);
-    if (isValid) {
-      let sql = `SELECT * FROM ${user_table} WHERE email = $1`;
-      let values = [email];
-      let response = await pool.query(sql, values);
-      console.log(response.rows[0]);
-      if (response.rowCount >= 1 && req.user.id == response.rows[0].id) {
-        return res.status(200).json({
-          status: "success",
-          message: { name: response.rows[0].name, id: response.rows[0].id },
-        });
-      } else {
-        return res.status(400).json({
-          status: "error",
-          message:
-            "The requested user does not exist or you do not have permission to view them",
-        });
-      }
-    } else {
-      return res
-        .status(400)
-        .json({ status: "error", message: "Your email is in invalid format" });
-    }
-  } catch (err) {
-    console.error("DB Test Error:", err);
-  }
+    // Call the service
+    
 }
 
 async function registerUser(req, res) {
