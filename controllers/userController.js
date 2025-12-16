@@ -4,14 +4,13 @@ const { validateEmail } = require("../utils/validEmail");
 const { hashPassword, comparePassword } = require("../utils/hash");
 const { userSchema } = require("../models/joiSchema");
 const { getToken } = require("../utils/auth");
+const { getUserService } = require("../service/userService");
 
 let user_table = `"quickcart".users`;
 
 async function getUsers(req, res) {
-  try {
-    let { email } = req.query;
-    // Call the service
-    
+  let { email } = req.query;
+  let response = getUserService(email);
 }
 
 async function registerUser(req, res) {
