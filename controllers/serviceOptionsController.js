@@ -1,5 +1,8 @@
 const { sendError, sendSuccess } = require("../utils/apiResponse");
-const ServiceOptions = require("../service/serviceOptionsService");
+const {
+  getServiceOptions,
+  reserveServiceOption,
+} = require("../service/serviceOptionsService");
 
 async function pickupServiceOptions(req, res) {
   console.log("Here");
@@ -8,7 +11,7 @@ async function pickupServiceOptions(req, res) {
     sendError(res, `Field Missing store_id`, 400);
   }
 
-  const response = await ServiceOptions.getServiceOptions(store_id);
+  const response = await getServiceOptions(store_id);
 
   response.rowCount > 0
     ? sendSuccess(res, null, response.rows, 200)
@@ -18,8 +21,10 @@ async function pickupServiceOptions(req, res) {
 async function reserveServiceoption(req, res) {
   const { service_option_id } = req.body;
   const user_id = req.user.id;
-  const updateServiceOptionsHoldResponse =
-    await ServiceOptions.reserveServiceOption(service_option_id, user_id);
+  const updateServiceOptionsHoldResponse = await reserveServiceOption(
+    service_option_id,
+    user_id
+  );
 
   sendSuccess(res, "Reserved", updateServiceOptionsHoldResponse.rows[0], 200);
 }
