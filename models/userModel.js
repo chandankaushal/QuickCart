@@ -9,8 +9,8 @@ const { ExpressError } = require("../utils/ExpressError");
 let user_table = `"quickcart".users`;
 
 const User = {
-  async getUsers(email) {
-    let sql = `SELECT * FROM ${user_table} WHERE email = $1`;
+  async getByEmail(email) {
+    let sql = `SELECT id,name,email,role FROM ${user_table} WHERE email = $1`;
     let values = [email];
     let response = await pool.query(sql, values);
     return response;

@@ -4,6 +4,14 @@ const userSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().min(4).required(),
 });
+const loginSchema = Joi.object({
+  email: Joi.string().email().required(),
+  password: Joi.string().min(4).required(),
+});
+
+const getUserSchema = Joi.object({
+  email: Joi.string().email().required(),
+});
 
 const storeSchema = Joi.object({
   STORE_ID: Joi.number().integer().min(1).required(),
@@ -23,4 +31,4 @@ const storeSchema = Joi.object({
   STREET: Joi.string().min(1).required(),
 });
 
-module.exports = { userSchema, storeSchema };
+module.exports = { userSchema, storeSchema, getUserSchema, loginSchema };

@@ -2,11 +2,15 @@ const { validateEmail } = require("../utils/validEmail");
 const User = require("../models/userModel");
 const { ExpressError } = require("../utils/ExpressError");
 
-async function getUserService(email) {
+async function getUserByEmail(email, user_id) {
+  if (!user_id) {
+    throw new ExpressError("No User ID", 400, "NO_USER_ID");
+  }
   let isValid = validateEmail(email);
+
   if (isValid) {
-    let response = User.getUsers(email);
-    if (response.rowCount >= 1 && req.user.id == response.rows[0].id) {
+    let response = await User.getByEmail(email);
+    if (response.rowCount >= 1 && user_id == response.rows[0].id) {
       return response;
     } else {
       throw new ExpressError(
@@ -18,4 +22,4 @@ async function getUserService(email) {
   }
 }
 
-module.exports = { getUserService };
+module.exports = { getUserByEmail };
