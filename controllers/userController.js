@@ -4,7 +4,11 @@ const { validateEmail } = require("../utils/validEmail");
 const { hashPassword, comparePassword } = require("../utils/hash");
 const { userSchema } = require("../models/joiSchema");
 const { getToken } = require("../utils/auth");
-const { getUserByEmail } = require("../service/userService");
+const {
+  getUserByEmail,
+  loginUser,
+  registerUser,
+} = require("../service/userService");
 const { ExpressError } = require("../utils/ExpressError");
 const { sendSuccess } = require("../utils/apiResponse");
 
@@ -12,30 +16,14 @@ let user_table = `"quickcart".users`;
 
 async function getUsers(req, res) {
   let { email } = req.query;
-  let user_id = req.user.id;
-  let response = await getUserByEmail(email, user_id);
+  let response = await getUserByEmail(email, req.user.id);
   sendSuccess(res, null, response.rows, 200);
 }
 
-async function registerUser(req, res) {
-  console.log(req.body);
-  try {
-    let { name, email, password } = req.body;
-    const uuid = crypto.randomUUID();
-    let hashedPassword = await hashPassword(password);
-    const sql = `INSERT INTO ${user_table} (id,name,email,password) VALUES ($1,$2,$3,$4)`;
-    const values = [uuid, name, email, hashedPassword];
-    await pool.query(sql, values);
-    return res
-      .status(200)
-      .json({ status: "success", message: "User Inserted Successfully" });
-  } catch (err) {
-    console.log("There was an error with insert", err);
-    res.status(500).json({
-      status: "error",
-      message: "Something went wrong",
-    });
-  }
+async function signupUser(req, res) {
+  let { name, email, password } = req.body;
+  let response = await registerUser(name, email, password);
+  sendSuccess(res, null, response, 200);
 }
 
 async function deleteUser(req, res) {
@@ -62,32 +50,10 @@ async function updateUser(req, res) {
   res.send("Update User");
 }
 
-async function loginUser(req, res) {
+async function login(req, res) {
   let { email, password } = req.body;
-
-  const sql = `SELECT id,name,email,role,password FROM ${user_table} WHERE email = $1`;
-  let values = [email];
-
-  const response = await pool.query(sql, values);
-
-  let result = await comparePassword(password, response.rows[0].password);
-  if (result) {
-    const User = {
-      id: response.rows[0].id,
-      email: response.rows[0].email,
-      role: response.rows[0].role,
-    };
-
-    return res.status(200).json({
-      status: "success",
-      message: "logged in",
-      access_token: getToken(User),
-    });
-  } else {
-    return res
-      .status(401)
-      .json({ status: "error", message: "please check your credentials" });
-  }
+  const response = await loginUser(email, password);
+  sendSuccess(res, null, response, 200);
 }
 
-module.exports = { getUsers, registerUser, deleteUser, updateUser, loginUser };
+module.exports = { getUsers, signupUser, deleteUser, updateUser, login };

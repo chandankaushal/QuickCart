@@ -1,6 +1,9 @@
 const { validateEmail } = require("../utils/validEmail");
 const User = require("../models/userModel");
 const { ExpressError } = require("../utils/ExpressError");
+const { comparePassword, hashPassword } = require("../utils/hash");
+const { getToken } = require("../utils/auth");
+const crypto = require("crypto");
 
 async function getUserByEmail(email, user_id) {
   if (!user_id) {
@@ -10,6 +13,7 @@ async function getUserByEmail(email, user_id) {
 
   if (isValid) {
     let response = await User.getByEmail(email);
+    // console.log(response);
     if (response.rowCount >= 1 && user_id == response.rows[0].id) {
       return response;
     } else {
@@ -22,4 +26,52 @@ async function getUserByEmail(email, user_id) {
   }
 }
 
-module.exports = { getUserByEmail };
+async function loginUser(email, password) {
+  const response = await User.getPasswordByEmail(email);
+  let result = await comparePassword(password, response.rows[0].password);
+  if (result) {
+    let userObj = {
+      id: response.rows[0].id,
+      email: response.rows[0].email,
+      role: response.rows[0].role,
+    };
+    let access_token = getToken(userObj);
+
+    return { access_token: access_token };
+  } else {
+    throw new ExpressError(
+      "Please check your credentials",
+      401,
+      "UNAUTHORIZED"
+    );
+  }
+}
+
+async function registerUser(name, email, password) {
+  try {
+    const uuid = crypto.randomUUID();
+    let hashedPassword = await hashPassword(password);
+    let response = await User.register(uuid, name, email, hashedPassword);
+    return response;
+  } catch (err) {
+    // Unique constraint
+    if (err.code === "23505") {
+      throw new ExpressError("Record already exists", 409, "UNIQUE_VIOLATION");
+    }
+
+    // Foreign key violation
+    if (err.code === "23503") {
+      throw new ExpressError("Invalid reference", 400, "FOREIGN_KEY_VIOLATION");
+    }
+
+    // Invalid input (UUID, int, etc.)
+    if (err.code === "22P02") {
+      throw new ExpressError("Invalid input format", 400, "INVALID_INPUT");
+    }
+
+    // Fallback
+    throw new ExpressError("Database operation failed", 500, "DATABASE_ERROR");
+  }
+}
+
+module.exports = { getUserByEmail, loginUser, registerUser };

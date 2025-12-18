@@ -2,10 +2,10 @@ const express = require("express");
 const router = express.Router();
 const {
   getUsers,
-  registerUser,
+  signupUser,
   deleteUser,
   updateUser,
-  loginUser,
+  login,
 } = require("../controllers/userController");
 
 const {
@@ -20,11 +20,17 @@ const {
   loginSchema,
 } = require("../models/joiSchema");
 const { checkValidToken } = require("../middleware/auth");
+const wrapAsync = require("../utils/wrapAsync");
 
-router.get("/show", checkValidToken, validateQuery(getUserSchema), getUsers);
-router.post("/register", validateBody(userSchema), registerUser);
-router.put("/update", updateUser);
-router.delete("/delete", deleteUser);
-router.post("/login", validateBody(loginSchema), loginUser);
+router.get(
+  "/show",
+  checkValidToken,
+  validateQuery(getUserSchema),
+  wrapAsync(getUsers)
+);
+router.post("/register", validateBody(userSchema), wrapAsync(signupUser));
+router.put("/update", wrapAsync(updateUser));
+router.delete("/delete", wrapAsync(deleteUser));
+router.post("/login", validateBody(loginSchema), wrapAsync(login));
 
 module.exports = router;
