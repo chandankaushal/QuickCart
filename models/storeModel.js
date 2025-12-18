@@ -1,6 +1,6 @@
 const pool = require("../db");
 
-const STORES_TABLE = `quickcart.stores`;
+const STORES_TABLE = `"quickcart".stores`;
 
 const Stores = {
   async getAll() {
@@ -18,6 +18,12 @@ const Stores = {
     }
     let response = await pool.query(sql, params);
     return response;
+  },
+  async getStoreById(id) {
+    let sql = `SELECT store_id,name,zip_code FROM ${STORES_TABLE} WHERE store_id = $1`;
+    const params = [id];
+    let response = await pool.query(sql, params);
+    return response.rows;
   },
 };
 
