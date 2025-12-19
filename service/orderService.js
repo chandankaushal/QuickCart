@@ -42,9 +42,11 @@ async function create_pickup_order(
     );
   }
   //Mark the hold as expired
+  //TO-DO
   console.log("marking the hold as expired");
 
   // Subtract the items from Products table
+  //TO-DO
   console.log("adjusting stock");
 
   // put the order in the DB
@@ -54,7 +56,7 @@ async function create_pickup_order(
     service_option_hold_id,
     user_id
   );
-  console.log(orderResponse);
+
   if (orderResponse.rowCount == 1 && orderResponse.command === "INSERT") {
     return orderResponse;
   } else {
@@ -64,9 +66,6 @@ async function create_pickup_order(
       "INTERNAL_SERVER_ERROR"
     );
   }
-
-  // Send success
-  console.log("Order created");
 }
 
 module.exports = { create_pickup_order };
