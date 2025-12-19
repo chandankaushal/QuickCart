@@ -1,5 +1,5 @@
-const { response } = require("express");
 const ServiceOptionHold = require("../models/serviceOptionsHoldModel");
+const { ExpressError } = require("../utils/ExpressError");
 
 async function isServiceOptionHoldValid(id) {
   let { expires_at, created_at } = await ServiceOptionHold.holdById(id);
@@ -28,4 +28,12 @@ async function isServiceOptionHoldValid(id) {
   return true;
 }
 
-module.exports = { isServiceOptionHoldValid };
+async function markServiceOptionHoldTaken(id) {
+  let response = await ServiceOptionHold.updateServiceOptionHold(id);
+  if (response.rowCount === 0) {
+    throw new ExpressError("Service Option Hold Not Found", 400, "NOT_FOUND");
+  }
+  return response;
+}
+
+module.exports = { isServiceOptionHoldValid, markServiceOptionHoldTaken };

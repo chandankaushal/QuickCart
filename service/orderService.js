@@ -1,6 +1,9 @@
 const { Stores } = require("../models/storeModel");
 const { ExpressError } = require("../utils/ExpressError");
-const { isServiceOptionHoldValid } = require("./serviceOptionHoldService");
+const {
+  isServiceOptionHoldValid,
+  markServiceOptionHoldTaken,
+} = require("./serviceOptionHoldService");
 const Product = require("../service/productService");
 const Order = require("../models/orderModel");
 const checkProductStock = require("../service/productService");
@@ -42,8 +45,11 @@ async function create_pickup_order(
     );
   }
   //Mark the hold as expired
-  //TO-DO
+
   console.log("marking the hold as expired");
+  let expired_hold_response = await markServiceOptionHoldTaken(
+    service_option_hold_id
+  );
 
   // Subtract the items from Products table
   //TO-DO
