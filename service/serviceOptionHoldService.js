@@ -1,28 +1,17 @@
-const { response } = require("express");
 const ServiceOptionHold = require("../models/serviceOptionsHoldModel");
+const { ExpressError } = require("../utils/ExpressError");
 
 async function isServiceOptionHoldValid(id) {
-  let { expires_at, created_at } = await ServiceOptionHold.holdById(id);
+  let { expires_at } = await ServiceOptionHold.holdById(id);
 
-  const ends = new Date(expires_at);
-  const starts = new Date(created_at);
+  const expiresAt = new Date(expires_at);
+  const now = new Date();
 
-  if (ends <= starts) {
+  if (now > expiresAt) {
     throw new ExpressError(
-      "END TIME MUST BE AFTER START TIME",
-      500,
-      "SERVICE_OPTIONS_HOLD_DB"
-    );
-  }
-
-  const diff = ends - starts;
-  const diffMinutes = diff / (1000 * 60);
-
-  if (diffMinutes > 10) {
-    throw new ExpressError(
-      "Service Option Hold is Expired. Please create a new one",
+      "Service Options hold is expired",
       400,
-      "HOLD_EXPIRED"
+      "SERVICE_OPTIONS_HOLD_EXPIRED"
     );
   }
   return true;
