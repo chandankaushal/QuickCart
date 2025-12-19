@@ -1,9 +1,18 @@
-const { GetupcFromItems } = require("../utils/items");
+const { ExpressError } = require("../utils/ExpressError");
+const Product = require("../models/productModel");
 async function checkProductStock(items, store_id) {
   let upcs = items.map((item) => item.upc);
 
   let result = await Product.getProductByUpc(upcs, store_id);
+
   let availableItems = result.rows;
+  if (availableItems.length == 0) {
+    throw new ExpressError(
+      "None of the items you requested are available",
+      400,
+      "ITEM_NOT_FOUND"
+    );
+  }
 
   const dbMap = {};
 
