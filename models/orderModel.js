@@ -1,3 +1,23 @@
 const pool = require("../db");
+const { ExpressError } = require("../utils/ExpressError");
 
 const ORDERS_TABLE = `"quickcart".orders`;
+
+const Order = {
+  async pickupOrder(order_id, store_id, service_option_hold_id, user_id) {
+    try {
+      let sql = `INSERT INTO ${ORDERS_TABLE} (id,service_option_hold_id,user_id,store_id) VALUES ($1,$2,$3,$4)`;
+      let params = [order_id, service_option_hold_id, user_id, store_id];
+      let response = await pool.query(sql, params);
+      return response;
+    } catch (err) {
+      throw new ExpressError(
+        `Error Table: ${err.table}, Message:${err.message}`,
+        500,
+        "DB_ERROR"
+      );
+    }
+  },
+};
+
+module.exports = Order;
