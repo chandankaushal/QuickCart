@@ -4,7 +4,7 @@ function errorHandler(err, req, res, next) {
   const isExpressError = err instanceof ExpressError;
 
   const status = isExpressError ? err.statusCode : 500;
-  const message = isExpressError ? err.message : "Server error";
+  const message = err.message; // Remains same for all errors
   const code = isExpressError ? err.code : "INTERNAL_ERROR";
 
   res.status(status).json({ status: "error", message, code });
