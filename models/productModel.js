@@ -13,7 +13,30 @@ const Product = {
 
     return result;
   },
-  async updateProductAvailability() {},
+  async batchUpdateProductQty(items, store_id) {
+    // Batch update to avoid multiple update statements
+    let preStatement = `UPDATE ${PRODUCT_TABLE} SET qty = qty - CASE upc `;
+    let caseStatement = items
+      .map((item, index) => `WHEN $${index * 2 + 1} THEN $${index * 2 + 2}`)
+      .join(" ");
+    let endStatement = ` ELSE 0 END WHERE upc = ANY($${
+      items.length * 2 + 1
+    }::bigint[]) AND store_id = $${
+      items.length * 2 + 2
+    } AND qty >= CASE upc ${caseStatement} ELSE 0 END`;
+    let finalStatement = preStatement + caseStatement + endStatement; // Combining all statements to make one
+    console.log(finalStatement);
+
+    let params = items.flatMap((item) => [item.upc, item.qty]); //UPC and qty for CASE Statements
+    let upcs = items.map((item) => item.upc); // UPC for Where clause
+
+    params.push(upcs); // Pushing upcs for where clause in params
+    params.push(store_id); // pushing store_id as param
+    console.log(params);
+
+    let queryResult = await pool.query(finalStatement, params);
+    return queryResult;
+  },
   async createNewProduct() {},
   async DeleteProduct() {},
 };
