@@ -19,8 +19,13 @@ async function isServiceOptionHoldValid(id) {
 
 async function markServiceOptionHoldTaken(id) {
   let response = await ServiceOptionHold.updateServiceOptionHold(id);
+  console.log(`Service Option Hold${response}`);
   if (response.rowCount === 0) {
-    throw new ExpressError("Service Option Hold Not Found", 400, "NOT_FOUND");
+    throw new ExpressError(
+      "Service Option Hold not found. Please try again later",
+      400,
+      "NOT_FOUND"
+    );
   }
   return response;
 }
