@@ -36,7 +36,6 @@ async function loginUser(email, password) {
       role: response.rows[0].role,
     };
     let access_token = getToken(userObj);
-
     return { access_token: access_token };
   } else {
     throw new ExpressError(
