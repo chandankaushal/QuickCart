@@ -56,7 +56,6 @@ async function login(req, res) {
   let { email, password } = req.body;
   req.log.info({ email }, "Login attempt started");
   const response = await loginUser(email, password);
-
   req.log.info({ email }, "Login attempted finished");
   sendSuccess(res, null, response, 200);
 }
