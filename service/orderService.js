@@ -4,9 +4,11 @@ const {
   isServiceOptionHoldValid,
   markServiceOptionHoldTaken,
 } = require("./serviceOptionHoldService");
-const Product = require("../service/productService");
 const Order = require("../models/orderModel");
-const { checkProductStock } = require("../service/productService");
+const {
+  checkProductStock,
+  updateQtyinDb,
+} = require("../service/productService");
 async function create_pickup_order(
   order_id,
   store_id,
@@ -16,12 +18,12 @@ async function create_pickup_order(
 ) {
   //check if the location is exists
   const storeId = Number(store_id);
-  console.log(store_id);
+  // console.log(store_id);
 
   if (!Number.isInteger(store_id)) {
     throw new ExpressError("Invalid store id", 400, "INVALID_STORE_ID");
   }
-  console.log("Checking if store exists");
+  // console.log("Checking if store exists");
   let storeResponse = await Stores.getStoreById(storeId);
   if (storeResponse.length === 0) {
     throw new ExpressError(
@@ -31,11 +33,11 @@ async function create_pickup_order(
     );
   }
   //check if the hold is not expired
-  console.log("Checking if hold is valid");
+  // console.log("Checking if hold is valid");
   let isholdValid = await isServiceOptionHoldValid(service_option_hold_id);
 
   //check if the items are available
-  console.log("checking if products are available");
+  // console.log("checking if products are available");
   const isProductAvailable = await checkProductStock(items, store_id);
   if (isProductAvailable.problems) {
     throw new ExpressError(
@@ -53,7 +55,9 @@ async function create_pickup_order(
 
   // Subtract the items from Products table
   //TO-DO
-  console.log("adjusting stock");
+  let updateQtyResponse = await updateQtyinDb(items, storeId);
+
+  // console.log("adjusting stock");
 
   // put the order in the DB
   const orderResponse = await Order.pickupOrder(
