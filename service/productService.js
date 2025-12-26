@@ -64,4 +64,4 @@ async function updateQtyinDb(stockChecks) {
   }
 }
 
-module.exports = checkProductStock;
+module.exports = { checkProductStock, updateQtyinDb };
