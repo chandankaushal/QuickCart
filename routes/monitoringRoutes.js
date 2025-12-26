@@ -1,8 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { checkDbHealth } = require("../controllers/monitoringController");
-const wrapAsync = require("../utils/wrapAsync");
 
-router.get("/db", wrapAsync(checkDbHealth));
+router.get("/db", checkDbHealth);
 
 module.exports = router;

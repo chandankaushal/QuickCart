@@ -11,7 +11,7 @@ function getToken(user) {
     },
     process.env.JWT_SECRET,
     {
-      jwtid: crypto.randomUUID(), // TODO: Store this in a DB
+      jwtid: crypto.randomUUID(),
       expiresIn: process.env.JWT_EXPIRES_IN,
     }
   );
