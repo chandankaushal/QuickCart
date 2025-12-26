@@ -22,7 +22,7 @@ const pinoMiddleware = pinoHttp({
   },
 
   customSuccessMessage: (req, res) =>
-    `${req.method} ${req.url} ${res.statusCode}`,
+    `${req.method} ${req.url} ${res.statusCode}`, // need to change this
 });
 
 module.exports = pinoMiddleware;
