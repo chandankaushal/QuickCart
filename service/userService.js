@@ -4,17 +4,19 @@ const { ExpressError } = require("../utils/ExpressError");
 const { comparePassword, hashPassword } = require("../utils/hash");
 const { getToken } = require("../utils/auth");
 const crypto = require("crypto");
+const logger = require("../utils/logger");
 
-async function getUserByEmail(email, user_id) {
+async function getUserByEmail(email, user_id, log = logger) {
   if (!user_id) {
     throw new ExpressError("No User ID", 400, "NO_USER_ID");
   }
+  log.info("Validating Email");
   let isValid = validateEmail(email);
 
   if (isValid) {
     let response = await User.getByEmail(email);
-    // console.log(response);
     if (response.rowCount >= 1 && user_id == response.rows[0].id) {
+      log.info(response.rows[0].email, `Found User`);
       return response;
     } else {
       throw new ExpressError(
@@ -26,8 +28,11 @@ async function getUserByEmail(email, user_id) {
   }
 }
 
-async function loginUser(email, password) {
+async function loginUser(email, password, log = logger) {
+  log.info("Getting User by Email");
   const response = await User.getPasswordByEmail(email);
+  console.log(response);
+  log.info("Comparing Passwords");
   let result = await comparePassword(password, response.rows[0].password);
   if (result) {
     let userObj = {
@@ -36,6 +41,7 @@ async function loginUser(email, password) {
       role: response.rows[0].role,
     };
     let access_token = getToken(userObj);
+    log.info("Generated Access Token");
     return { access_token: access_token };
   } else {
     throw new ExpressError(
@@ -46,7 +52,7 @@ async function loginUser(email, password) {
   }
 }
 
-async function registerUser(name, email, password) {
+async function registerUser(name, email, password, log = logger) {
   try {
     const uuid = crypto.randomUUID();
     let hashedPassword = await hashPassword(password);
