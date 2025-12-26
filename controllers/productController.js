@@ -15,10 +15,22 @@ async function checkProductAvailabilty(req, res) {
       400,
       "NOT_AVAILABLE"
     );
+    throw new ExpressError(
+      "Some Products are not available",
+      400,
+      "NOT_AVAILABLE"
+    );
   }
   sendSuccess(res, null, result.data, 200);
 }
 
+async function updateAvailabilty(req, res) {
+  let { items, location_code } = req.body;
+  let result = await updateQtyinDb(items, location_code);
+  sendSuccess(res, "Updated Qty", result.rows, 200);
+}
+
+module.exports = { checkProductAvailabilty, updateAvailabilty };
 async function updateAvailabilty(req, res) {
   let { items, location_code } = req.body;
   let result = await updateQtyinDb(items, location_code);

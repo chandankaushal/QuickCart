@@ -48,7 +48,7 @@ async function create_pickup_order(
   }
   //Mark the hold as expired
 
-  log.info("marking the hold as expired");
+  // console.log("marking the hold as expired");
   let expired_hold_response = await markServiceOptionHoldTaken(
     service_option_hold_id
   );
