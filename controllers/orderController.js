@@ -11,7 +11,8 @@ async function createPickupOrder(req, res) {
     location_code,
     service_option_hold_id,
     items,
-    user_id
+    user_id,
+    req.log
   );
   if (response) {
     sendSuccess(res, "Order Successfully created", { order_id }, 200);
