@@ -14,14 +14,13 @@ function errorHandler(err, req, res, next) {
         method: req.method,
         path: req.path,
         id: req.id,
-        userId: req.user?.id,
       },
       error: message,
       code: code,
       statusCode: status,
       stack: err.stack,
     },
-    "There was an error in the request"
+    message
   );
 
   res.status(status).json({ status: "error", message, code });
