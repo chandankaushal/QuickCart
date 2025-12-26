@@ -5,7 +5,6 @@ const {
 } = require("../service/serviceOptionsService");
 
 async function pickupServiceOptions(req, res) {
-  console.log("Here");
   const { store_id } = req.body;
   if (!store_id) {
     sendError(res, `Field Missing store_id`, 400);

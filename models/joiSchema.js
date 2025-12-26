@@ -31,4 +31,38 @@ const storeSchema = Joi.object({
   STREET: Joi.string().min(1).required(),
 });
 
-module.exports = { userSchema, storeSchema, getUserSchema, loginSchema };
+const orderSchema = Joi.object({
+  order_id: Joi.string().uuid().required(),
+  items: Joi.array()
+    .items(
+      Joi.object({
+        upc: Joi.number().integer().required(),
+        qty: Joi.number().integer().min(1).required(),
+      })
+    )
+    .min(1)
+    .required(),
+  location_code: Joi.number().integer().required(),
+  service_option_hold_id: Joi.number().integer().required(),
+});
+
+const getServiceOptionSchema = Joi.object({
+  store_id: Joi.number().integer().required(),
+});
+const reserveServiceOptionSchema = Joi.object({
+  service_option_id: Joi.number().integer().required(),
+});
+const getStoreSchema = Joi.object({
+  zip_code: Joi.number().integer().required(),
+  street: Joi.string().optional(),
+});
+module.exports = {
+  userSchema,
+  storeSchema,
+  getUserSchema,
+  loginSchema,
+  orderSchema,
+  getServiceOptionSchema,
+  reserveServiceOptionSchema,
+  getStoreSchema,
+};
