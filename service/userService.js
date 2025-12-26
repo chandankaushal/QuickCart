@@ -31,7 +31,13 @@ async function getUserByEmail(email, user_id, log = logger) {
 async function loginUser(email, password, log = logger) {
   log.info("Getting User by Email");
   const response = await User.getPasswordByEmail(email);
-  console.log(response);
+  if (response.rowCount === 0) {
+    throw new ExpressError(
+      "User with this email does not exist",
+      400,
+      "NO_USER_EXISTS"
+    );
+  }
   log.info("Comparing Passwords");
   let result = await comparePassword(password, response.rows[0].password);
   if (result) {
