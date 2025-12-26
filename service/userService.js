@@ -59,30 +59,10 @@ async function loginUser(email, password, log = logger) {
 }
 
 async function registerUser(name, email, password, log = logger) {
-  try {
-    const uuid = crypto.randomUUID();
-    let hashedPassword = await hashPassword(password);
-    let response = await User.register(uuid, name, email, hashedPassword);
-    return response;
-  } catch (err) {
-    // Unique constraint
-    if (err.code === "23505") {
-      throw new ExpressError("Record already exists", 409, "UNIQUE_VIOLATION");
-    }
-
-    // Foreign key violation
-    if (err.code === "23503") {
-      throw new ExpressError("Invalid reference", 400, "FOREIGN_KEY_VIOLATION");
-    }
-
-    // Invalid input (UUID, int, etc.)
-    if (err.code === "22P02") {
-      throw new ExpressError("Invalid input format", 400, "INVALID_INPUT");
-    }
-
-    // Fallback
-    throw new ExpressError("Database operation failed", 500, "DATABASE_ERROR");
-  }
+  const uuid = crypto.randomUUID();
+  let hashedPassword = await hashPassword(password);
+  let response = await User.register(uuid, name, email, hashedPassword);
+  return response;
 }
 
 module.exports = { getUserByEmail, loginUser, registerUser };
