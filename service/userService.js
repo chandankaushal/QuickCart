@@ -60,6 +60,7 @@ async function loginUser(email, password, log = logger) {
 
 async function registerUser(name, email, password, log = logger) {
   const uuid = crypto.randomUUID();
+  log.info("Hashing Password");
   let hashedPassword = await hashPassword(password);
   let response = await User.register(uuid, name, email, hashedPassword);
   return response;
