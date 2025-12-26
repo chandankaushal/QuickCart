@@ -10,12 +10,15 @@ function errorHandler(err, req, res, next) {
 
   logger.error(
     {
+      req: {
+        method: req.method,
+        path: req.path,
+        id: req.id,
+        userId: req.user?.id,
+      },
       error: message,
       code: code,
       statusCode: status,
-      method: req.method,
-      path: req.path,
-      userId: req.user?.id,
       stack: err.stack,
     },
     "There was an error in the request"
