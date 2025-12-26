@@ -10,13 +10,13 @@ async function getUserByEmail(email, user_id, log = logger) {
   if (!user_id) {
     throw new ExpressError("No User ID", 400, "NO_USER_ID");
   }
-  log.info("Validating Email");
+  log.info({ email }, "Validating Email");
   let isValid = validateEmail(email);
 
   if (isValid) {
     let response = await User.getByEmail(email);
     if (response.rowCount >= 1 && user_id == response.rows[0].id) {
-      log.info(response.rows[0].email, `Found User`);
+      log.info(`Found User`, response.rows[0].id);
       return response;
     } else {
       throw new ExpressError(
