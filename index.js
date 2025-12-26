@@ -1,4 +1,10 @@
 // server.js
+require("dd-trace").init({
+  service: "quickcart", // or any name you want to see in APM
+  env: "dev", // dev / staging / prod
+  logInjection: true, // puts trace IDs into logs
+  runtimeMetrics: true, // optional, extra metrics
+});
 require("dotenv").config();
 const express = require("express");
 const userRoutes = require("./routes/userRoutes.js");
@@ -8,9 +14,13 @@ const serviceOptionsRoutes = require("./routes/serviceOptionsRoutes");
 const productRoutes = require("./routes/productRoutes.js");
 const orderRoutes = require("./routes/orderRoutes.js");
 const errorHandler = require("./middleware/error.js");
+const logger = require("./utils/logger");
+const pinoMiddleware = require("./middleware/pinoLogger.js");
 
 const app = express();
 app.use(express.json());
+app.use(pinoMiddleware);
+
 app.get("/", (req, res) => {
   res.send("Server is running ✅");
 });
@@ -27,5 +37,6 @@ const PORT = process.env.PORT || 3000;
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Server is running on port ${PORT}`);
+  // console.log(`Server running on port ${PORT}`);
 });

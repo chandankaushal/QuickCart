@@ -9,14 +9,16 @@ const {
   loginUser,
   registerUser,
 } = require("../service/userService");
-const { ExpressError } = require("../utils/ExpressError");
+
 const { sendSuccess } = require("../utils/apiResponse");
 
 let user_table = `"quickcart".users`;
 
 async function getUsers(req, res) {
   let { email } = req.query;
-  let response = await getUserByEmail(email, req.user.id);
+  req.log.info({ email }, "Looking up this user in DB");
+  let response = await getUserByEmail(email, req.user.id, req.log);
+  req.log.info({ email }, "User Found");
   sendSuccess(res, null, response.rows, 200);
 }
 
@@ -52,7 +54,9 @@ async function updateUser(req, res) {
 
 async function login(req, res) {
   let { email, password } = req.body;
-  const response = await loginUser(email, password);
+  req.log.info({ email }, "Login attempt started");
+  const response = await loginUser(email, password, req.log);
+  req.log.info({ email }, "User Logged in Successfully");
   sendSuccess(res, null, response, 200);
 }
 
