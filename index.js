@@ -1,4 +1,10 @@
 // server.js
+require("dd-trace").init({
+  service: "quickcart", // or any name you want to see in APM
+  env: "dev", // dev / staging / prod
+  logInjection: true, // puts trace IDs into logs
+  runtimeMetrics: true, // optional, extra metrics
+});
 require("dotenv").config();
 const express = require("express");
 const userRoutes = require("./routes/userRoutes.js");
@@ -8,36 +14,12 @@ const serviceOptionsRoutes = require("./routes/serviceOptionsRoutes");
 const productRoutes = require("./routes/productRoutes.js");
 const orderRoutes = require("./routes/orderRoutes.js");
 const errorHandler = require("./middleware/error.js");
-const pinoHttp = require("pino-http");
 const logger = require("./utils/logger");
-const crypto = require("crypto");
+const pinoMiddleware = require("./middleware/pinoLogger.js");
 
 const app = express();
 app.use(express.json());
-app.use(
-  pinoHttp({
-    logger,
-    genReqId: (req) => req.headers["x-request-id"] || crypto.randomUUID(),
-
-    serializers: {
-      req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url,
-        };
-      },
-      res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
-      },
-    },
-
-    customSuccessMessage: (req, res) =>
-      `${req.method} ${req.url} ${res.statusCode}`,
-  })
-);
+app.use(pinoMiddleware);
 
 app.get("/", (req, res) => {
   res.send("Server is running ✅");
