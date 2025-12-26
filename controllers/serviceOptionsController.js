@@ -1,20 +1,24 @@
-const { sendError, sendSuccess } = require("../utils/apiResponse");
+const { sendSuccess } = require("../utils/apiResponse");
 const {
   getServiceOptions,
   reserveServiceOption,
 } = require("../service/serviceOptionsService");
+const { ExpressError } = require("../utils/ExpressError");
 
 async function pickupServiceOptions(req, res) {
   const { store_id } = req.body;
-  if (!store_id) {
-    sendError(res, `Field Missing store_id`, 400);
-  }
 
   const response = await getServiceOptions(store_id);
 
-  response.rowCount > 0
-    ? sendSuccess(res, null, response.rows, 200)
-    : sendError(res, "No options for this store", 400);
+  if (response.rowCount > 0) {
+    sendSuccess(res, null, response.rows, 200);
+  } else {
+    throw new ExpressError(
+      "No options for this store",
+      400,
+      "NO_SERVICE_OPTIONS"
+    );
+  }
 }
 
 async function reserveServiceoption(req, res) {
