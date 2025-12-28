@@ -21,10 +21,29 @@ async function getServiceOptions(store_id, log = logger) {
   return service_options;
 }
 
-async function reserveServiceOption(service_option_id, user_id) {
-  const reserveServiceOptionResponse =
+async function reserveServiceOption(service_option_id, user_id, log = logger) {
+  const { rows: service_option_hold_info } =
     await ServiceOptions.reserveServiceOption(service_option_id, user_id);
-  return reserveServiceOptionResponse;
+  if (service_option_hold_info.length === 0) {
+    throw new ExpressError(
+      "There was an error in reserving this service option. Please try another one",
+      500,
+      "SERVICE_OPTION_RESERVED_ERROR"
+    );
+  }
+  const { service_option_hold_id } = service_option_hold_info[0];
+  console.log;
+  log.info(
+    {
+      service_option: {
+        hold_id: service_option_hold_id,
+        service_option_id: service_option_id,
+      },
+    },
+    `Service Option reserved`
+  );
+
+  return service_option_hold_info;
 }
 
 module.exports = { getServiceOptions, reserveServiceOption };

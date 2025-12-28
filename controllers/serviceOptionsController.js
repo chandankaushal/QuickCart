@@ -15,12 +15,13 @@ async function pickupServiceOptions(req, res) {
 async function reserveServiceoption(req, res) {
   const { service_option_id } = req.body;
   const user_id = req.user.id;
-  const updateServiceOptionsHoldResponse = await reserveServiceOption(
+  const service_option_hold_info = await reserveServiceOption(
     service_option_id,
-    user_id
+    user_id,
+    req.log
   );
 
-  sendSuccess(res, "Reserved", updateServiceOptionsHoldResponse.rows[0], 200);
+  sendSuccess(res, "Reserved", service_option_hold_info, 200);
 }
 
 module.exports = { pickupServiceOptions, reserveServiceoption };
