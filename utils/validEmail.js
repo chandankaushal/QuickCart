@@ -4,6 +4,8 @@ function validateEmail(value) {
 
   if (isValid) {
     return true;
+  } else {
+    return false;
   }
 }
 
