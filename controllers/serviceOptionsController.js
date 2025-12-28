@@ -3,22 +3,13 @@ const {
   getServiceOptions,
   reserveServiceOption,
 } = require("../service/serviceOptionsService");
-const { ExpressError } = require("../utils/ExpressError");
 
 async function pickupServiceOptions(req, res) {
   const { store_id } = req.body;
 
-  const response = await getServiceOptions(store_id);
+  const service_options = await getServiceOptions(store_id, req.log);
 
-  if (response.rowCount > 0) {
-    sendSuccess(res, null, response.rows, 200);
-  } else {
-    throw new ExpressError(
-      "No options for this store",
-      400,
-      "NO_SERVICE_OPTIONS"
-    );
-  }
+  sendSuccess(res, null, service_options, 200);
 }
 
 async function reserveServiceoption(req, res) {
