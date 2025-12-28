@@ -15,6 +15,8 @@ function checkValidToken(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
+    req.log = req.log.child({ user_id: req.user.id }); //Adding user id to log every-time this function is called.
+
     next();
   } catch (err) {
     throw new ExpressError(

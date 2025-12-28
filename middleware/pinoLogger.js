@@ -4,8 +4,10 @@ const crypto = require("crypto");
 
 const pinoMiddleware = pinoHttp({
   logger,
+  customProps: (req) => ({
+    user_id: req.user?.id, //Adding this so when request completes we log user id
+  }),
   genReqId: (req) => req.headers["x-request-id"] || crypto.randomUUID(),
-
   serializers: {
     req(req) {
       return {
