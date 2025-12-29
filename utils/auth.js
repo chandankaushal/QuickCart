@@ -1,6 +1,7 @@
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const jwt_token = require("../models/jwtTokenModel");
 
 function getToken(user) {
   return jwt.sign(
@@ -11,10 +12,25 @@ function getToken(user) {
     },
     process.env.JWT_SECRET,
     {
-      jwtid: crypto.randomUUID(), // TODO: Store this in a DB
+      jwtid: crypto.randomUUID(),
       expiresIn: process.env.JWT_EXPIRES_IN,
     }
   );
 }
 
-module.exports = { getToken };
+async function storeTokenInDB(token) {
+  const decoded = jwt.decode(token);
+  if (!decoded || !decoded.id || !decoded.jti) {
+    throw new Error("Invalid token: missing required fields");
+  }
+  const user_id = decoded.id;
+  const token_id = decoded.jti;
+  const issue_time = decoded.iat ? new Date(decoded.iat * 1000) : null;
+  const expires_at = decoded.exp ? new Date(decoded.exp * 1000) : null;
+
+  await jwt_token.addToDB(token_id, user_id, issue_time, expires_at);
+
+  return true;
+}
+
+module.exports = { getToken, storeTokenInDB };
