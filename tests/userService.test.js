@@ -8,7 +8,7 @@ const { hashPassword, comparePassword } = require("../utils/hash");
 const { getToken } = require("../utils/auth");
 const { validateEmail } = require("../utils/validEmail");
 
-//Do we need the imports?
+//Need this to Mock the functions
 jest.mock("../models/userModel");
 jest.mock("../utils/hash");
 jest.mock("../utils/auth");
