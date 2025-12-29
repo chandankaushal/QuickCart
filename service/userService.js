@@ -25,6 +25,12 @@ async function getUserByEmail(email, user_id, log = logger) {
         "NO_USER_FOUND"
       );
     }
+  } else {
+    throw new ExpressError(
+      "The provided email is not valid",
+      400,
+      "INVALID_EMAIL"
+    );
   }
 }
 
