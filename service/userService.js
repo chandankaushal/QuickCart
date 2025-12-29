@@ -2,7 +2,7 @@ const { validateEmail } = require("../utils/validEmail");
 const User = require("../models/userModel");
 const { ExpressError } = require("../utils/ExpressError");
 const { comparePassword, hashPassword } = require("../utils/hash");
-const { getToken } = require("../utils/auth");
+const { getToken, storeTokenInDB } = require("../utils/auth");
 const crypto = require("crypto");
 const logger = require("../utils/logger");
 
@@ -54,6 +54,11 @@ async function loginUser(email, password, log = logger) {
     };
     let access_token = getToken(userObj);
     log.info("Generated Access Token");
+    // NO await in storing token because we dont want to block.
+    log.info("Storing token in DB");
+    storeTokenInDB(access_token).catch((err) =>
+      log.warn(`${err},"Failed to store token in DB`)
+    );
     return { access_token: access_token };
   } else {
     throw new ExpressError(
