@@ -5,7 +5,7 @@ const {
 } = require("../service/userService");
 const User = require("../models/userModel");
 const { hashPassword, comparePassword } = require("../utils/hash");
-const { getToken } = require("../utils/auth");
+const { getToken, storeTokenInDB } = require("../utils/auth");
 const { validateEmail } = require("../utils/validEmail");
 
 //Need this to Mock the functions
@@ -43,6 +43,7 @@ describe("loginUser function", () => {
     User.getPasswordByEmail.mockResolvedValue(fakeDbResponse);
     comparePassword.mockResolvedValue(true);
     getToken.mockReturnValue("fake.jwt.token");
+    storeTokenInDB.mockResolvedValue(true);
 
     const result = await loginUser(testEmail, testPassword, mockLogger);
     expect(result).toEqual({ access_token: "fake.jwt.token" });
