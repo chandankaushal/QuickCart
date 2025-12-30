@@ -11,7 +11,6 @@ async function getServiceOptions(store_id, log = logger) {
     "Service Options fetched successfully for the store"
   );
   if (service_options.length === 0) {
-    console.log("here");
     throw new ExpressError(
       "No service Options for this store",
       400,
