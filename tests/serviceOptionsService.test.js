@@ -56,7 +56,11 @@ describe("Reserve Service Options", () => {
   it("should successfuly reserve a service option when a valid id is passed and the option is available", async () => {
     let fakeServiceOptionId = 1;
     let fakeUserId = "abc";
-
+    const fakeServiceOptionAvailability = [
+      {
+        available: true,
+      },
+    ];
     const fakeDbResponse = {
       rows: [
         {
@@ -64,7 +68,9 @@ describe("Reserve Service Options", () => {
         },
       ],
     };
-
+    ServiceOptions.serviceOptionAvailableById.mockResolvedValue(
+      fakeServiceOptionAvailability
+    );
     ServiceOptions.reserveServiceOption.mockResolvedValue(fakeDbResponse);
     let result = await reserveServiceOption(fakeServiceOptionId, fakeUserId);
     expect(result).toEqual(fakeDbResponse.rows);
