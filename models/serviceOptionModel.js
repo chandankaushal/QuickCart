@@ -1,6 +1,4 @@
 const pool = require("../db");
-const { ExpressError } = require("../utils/ExpressError");
-
 const service_options_table = `"quickcart".service_options`;
 const service_options_hold_table = `"quickcart".service_options_holds`;
 
@@ -11,17 +9,13 @@ const ServiceOptions = {
     let response = await pool.query(sql, values);
     return response;
   },
-  async reserveServiceOption(service_option_id, user_id) {
+  async serviceOptionAvailableById(service_option_id) {
     let checkOptionsql = `SELECT available FROM ${service_options_table} WHERE service_option_id = $1`;
     let checkOptionValue = [service_option_id];
     let { rows } = await pool.query(checkOptionsql, checkOptionValue);
-    if (!rows[0].available) {
-      throw new ExpressError(
-        "This service Option is already taken",
-        400,
-        "SERVICE_OPTION_ALREADY_TAKEN"
-      );
-    }
+    return rows;
+  },
+  async reserveServiceOption(service_option_id, user_id) {
     let updateServiceOptionSql = `UPDATE ${service_options_table} SET available=$1 WHERE service_option_id = $2`;
     let updateServiceOptionValue = [false, service_option_id];
     await pool.query(updateServiceOptionSql, updateServiceOptionValue); // Update service options table and set that option as not available
