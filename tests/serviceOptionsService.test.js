@@ -1,6 +1,4 @@
 const ServiceOptions = require("../models/serviceOptionModel");
-const { ExpressError } = require("../utils/ExpressError");
-const logger = require("../utils/logger");
 const {
   getServiceOptions,
   reserveServiceOption,
@@ -46,6 +44,16 @@ describe("Get Service Options", () => {
       "No service Options for this store"
     );
   });
+
+  it("should propagate errors from the model when fetching service options", async () => {
+    const fakeStoreId = 1;
+    ServiceOptions.getServiceOptions.mockRejectedValue(new Error("DB failure"));
+
+    await expect(getServiceOptions(fakeStoreId, mockLogger)).rejects.toThrow(
+      "DB failure"
+    );
+    expect(ServiceOptions.getServiceOptions).toHaveBeenCalledWith(fakeStoreId);
+  });
 });
 
 describe("Reserve Service Options", () => {
@@ -53,7 +61,7 @@ describe("Reserve Service Options", () => {
     jest.clearAllMocks();
   });
 
-  it("should successfuly reserve a service option when a valid id is passed and the option is available", async () => {
+  it("should successfully reserve a service option when a valid id is passed and the option is available", async () => {
     let fakeServiceOptionId = 1;
     let fakeUserId = "abc";
 
@@ -66,23 +74,128 @@ describe("Reserve Service Options", () => {
     };
 
     ServiceOptions.reserveServiceOption.mockResolvedValue(fakeDbResponse);
-    let result = await reserveServiceOption(fakeServiceOptionId, fakeUserId);
+    let result = await reserveServiceOption(
+      fakeServiceOptionId,
+      fakeUserId,
+      mockLogger
+    );
     expect(result).toEqual(fakeDbResponse.rows);
+    expect(ServiceOptions.serviceOptionAvailableById).toHaveBeenCalledWith(
+      fakeServiceOptionId
+    );
+    expect(ServiceOptions.reserveServiceOption).toHaveBeenCalledWith(
+      fakeServiceOptionId,
+      fakeUserId
+    );
   });
-  it("should throw an error if there is no response from the DB", async () => {
+  it("should throw an error if there is no response for available", async () => {
     let fakeServiceOptionId = 1;
     let fakeUserId = "abc";
-
-    const fakeDbResponse = {
-      rows: [],
+    let serviceOptionAvailableResponse = [];
+    let fakeDBResponse = {
+      service_option_hold_info: [
+        {
+          service_option_holf_id: 1,
+          service_option_id: fakeServiceOptionId,
+        },
+      ],
     };
-
-    await ServiceOptions.reserveServiceOption.mockResolvedValue(fakeDbResponse);
+    ServiceOptions.serviceOptionAvailableById.mockResolvedValue(
+      serviceOptionAvailableResponse
+    );
+    ServiceOptions.reserveServiceOption.mockResolvedValue(fakeDBResponse);
 
     await expect(
-      reserveServiceOption(fakeServiceOptionId, fakeUserId)
+      reserveServiceOption(fakeServiceOptionId, fakeUserId, mockLogger)
+    ).rejects.toThrow("Please check the serviceOption ID");
+    expect(ServiceOptions.reserveServiceOption).not.toHaveBeenCalled();
+  });
+  it("should throw an error if there the service option is not available", async () => {
+    let fakeServiceOptionId = 1;
+    let fakeUserId = "abc";
+    let serviceOptionAvailableResponse = [
+      {
+        available: false,
+      },
+    ];
+    let fakeDBResponse = {
+      service_option_hold_info: [
+        {
+          service_option_holf_id: 1,
+          service_option_id: fakeServiceOptionId,
+        },
+      ],
+    };
+    ServiceOptions.serviceOptionAvailableById.mockResolvedValue(
+      serviceOptionAvailableResponse
+    );
+    ServiceOptions.reserveServiceOption.mockResolvedValue(fakeDBResponse);
+
+    await expect(
+      reserveServiceOption(fakeServiceOptionId, fakeUserId, mockLogger)
+    ).rejects.toThrow("This service Option is already taken");
+    expect(ServiceOptions.reserveServiceOption).not.toHaveBeenCalled();
+  });
+
+  it("should throw an error if reserve returns no rows", async () => {
+    let fakeServiceOptionId = 1;
+    let fakeUserId = "abc";
+    let serviceOptionAvailableResponse = [
+      {
+        available: true,
+      },
+    ];
+    const emptyReserveResponse = { rows: [] };
+    ServiceOptions.serviceOptionAvailableById.mockResolvedValue(
+      serviceOptionAvailableResponse
+    );
+    ServiceOptions.reserveServiceOption.mockResolvedValue(emptyReserveResponse);
+
+    await expect(
+      reserveServiceOption(fakeServiceOptionId, fakeUserId, mockLogger)
     ).rejects.toThrow(
       "There was an error in reserving this service option. Please try another one"
+    );
+    expect(ServiceOptions.reserveServiceOption).toHaveBeenCalledWith(
+      fakeServiceOptionId,
+      fakeUserId
+    );
+  });
+
+  it("should propagate errors when availability lookup fails", async () => {
+    let fakeServiceOptionId = 1;
+    let fakeUserId = "abc";
+    ServiceOptions.serviceOptionAvailableById.mockRejectedValue(
+      new Error("DB failure on availability")
+    );
+
+    await expect(
+      reserveServiceOption(fakeServiceOptionId, fakeUserId, mockLogger)
+    ).rejects.toThrow("DB failure on availability");
+    expect(ServiceOptions.reserveServiceOption).not.toHaveBeenCalled();
+  });
+
+  it("should propagate errors when reserve call fails", async () => {
+    let fakeServiceOptionId = 1;
+    let fakeUserId = "abc";
+    let serviceOptionAvailableResponse = [
+      {
+        available: true,
+      },
+    ];
+    ServiceOptions.serviceOptionAvailableById.mockResolvedValue(
+      serviceOptionAvailableResponse
+    );
+    ServiceOptions.reserveServiceOption.mockRejectedValue(
+      new Error("DB failure on reserve")
+    );
+
+    await expect(
+      reserveServiceOption(fakeServiceOptionId, fakeUserId, mockLogger)
+    ).rejects.toThrow("DB failure on reserve");
+    expect(ServiceOptions.reserveServiceOption).toHaveBeenCalledWith(
+      fakeServiceOptionId,
+      fakeUserId
     );
   });
 });
