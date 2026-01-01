@@ -1,5 +1,15 @@
+const fs = require("fs");
 const pino = require("pino");
 const path = require("path");
+
+const logDir = path.join(__dirname, "../logs");
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+}
+const destination =
+  process.env.NODE_ENV === "test" || process.env.CI
+    ? pino.destination(1) // stdout in CI/tests
+    : pino.destination(path.join(logDir, "quickcart.log"));
 
 const logger = pino(
   {
@@ -15,7 +25,7 @@ const logger = pino(
     },
     timestamp: () => `,"timestamp":"${new Date().toISOString()}"`,
   },
-  pino.destination(path.join(__dirname, "../logs/quickcart.log"))
+  destination
 );
 
 module.exports = logger;
