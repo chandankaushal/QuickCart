@@ -13,7 +13,7 @@ const mockLogger = {
   error: jest.fn(),
 };
 
-describe("Service Option Service", () => {
+describe("Get Service Options", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -44,6 +44,51 @@ describe("Service Option Service", () => {
     ServiceOptions.getServiceOptions.mockResolvedValue(fakeDBResponse);
     await expect(getServiceOptions(fakeStoreId, mockLogger)).rejects.toThrow(
       "No service Options for this store"
+    );
+  });
+});
+
+describe("Reserve Service Options", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should successfuly reserve a service option when a valid id is passed and the option is available", async () => {
+    let fakeServiceOptionId = 1;
+    let fakeUserId = "abc";
+    const fakeServiceOptionAvailability = [
+      {
+        available: true,
+      },
+    ];
+    const fakeDbResponse = {
+      rows: [
+        {
+          service_option_hold_id: 1,
+        },
+      ],
+    };
+    ServiceOptions.serviceOptionAvailableById.mockResolvedValue(
+      fakeServiceOptionAvailability
+    );
+    ServiceOptions.reserveServiceOption.mockResolvedValue(fakeDbResponse);
+    let result = await reserveServiceOption(fakeServiceOptionId, fakeUserId);
+    expect(result).toEqual(fakeDbResponse.rows);
+  });
+  it("should throw an error if there is no response from the DB", async () => {
+    let fakeServiceOptionId = 1;
+    let fakeUserId = "abc";
+
+    const fakeDbResponse = {
+      rows: [],
+    };
+
+    await ServiceOptions.reserveServiceOption.mockResolvedValue(fakeDbResponse);
+
+    await expect(
+      reserveServiceOption(fakeServiceOptionId, fakeUserId)
+    ).rejects.toThrow(
+      "There was an error in reserving this service option. Please try another one"
     );
   });
 });

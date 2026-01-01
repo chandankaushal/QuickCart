@@ -21,6 +21,22 @@ async function getServiceOptions(store_id, log = logger) {
 }
 
 async function reserveServiceOption(service_option_id, user_id, log = logger) {
+  const serviceOptionAvailable =
+    await ServiceOptions.serviceOptionAvailableById(service_option_id);
+  if (serviceOptionAvailable.length == 0) {
+    throw new ExpressError(
+      "Please check the serviceOption ID",
+      400,
+      "INVALID_SERVICE_OPTION"
+    );
+  }
+  if (!serviceOptionAvailable[0].available) {
+    throw new ExpressError(
+      "This service Option is already taken",
+      400,
+      "SERVICE_OPTION_ALREADY_TAKEN"
+    );
+  }
   const { rows: service_option_hold_info } =
     await ServiceOptions.reserveServiceOption(service_option_id, user_id);
   if (service_option_hold_info.length === 0) {
@@ -31,7 +47,6 @@ async function reserveServiceOption(service_option_id, user_id, log = logger) {
     );
   }
   const { service_option_hold_id } = service_option_hold_info[0];
-  console.log;
   log.info(
     {
       service_option: {
@@ -41,7 +56,6 @@ async function reserveServiceOption(service_option_id, user_id, log = logger) {
     },
     `Service Option reserved`
   );
-
   return service_option_hold_info;
 }
 

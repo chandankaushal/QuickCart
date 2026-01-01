@@ -3,6 +3,7 @@ const {
   getServiceOptions,
   reserveServiceOption,
 } = require("../service/serviceOptionsService");
+const { ExpressError } = require("../utils/ExpressError");
 
 async function pickupServiceOptions(req, res) {
   const { store_id } = req.body;
@@ -21,6 +22,13 @@ async function reserveServiceoption(req, res) {
     req.log
   );
 
+  if (!service_option_hold_info || service_option_hold_info.length === 0) {
+    throw new ExpressError(
+      "There was a problem in reserving the service option, please try another one",
+      500,
+      "SERVICE_OPTION_RESERVE_ERROR"
+    );
+  }
   sendSuccess(res, "Reserved", service_option_hold_info, 200);
 }
 
