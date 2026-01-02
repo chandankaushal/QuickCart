@@ -195,18 +195,263 @@ describe("Create Order Service", () => {
     expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
     expect(updateQtyinDb).not.toHaveBeenCalled();
   });
-});
+  // Hold Validation Errors
+  it("should throw error when hold is expired", async () => {
+    let fakeOrderId = "abc123";
+    let store_id = 1;
+    let service_option_hold_id = 123;
+    let items = [123];
+    let user_id = "test User";
 
-// Other test cases to add
-// //Hold Validation Errors
-// Expired service option hold — isServiceOptionHoldValid throws error
-// Product Stock Errors
-// No items available — checkProductStock throws error
-// Insufficient stock — checkProductStock returns { problems: true, data: [...] }
-// Database Operation Errors
-// markServiceOptionHoldTaken fails — throws error
-// updateQtyinDb fails — throws error
-// Order insert fails — pickupOrder returns rowCount: 0
-// Edge Cases
-// Empty items array — depends on expected behavior
-// String store_id that converts to valid number — e.g., "123" should work
+    Stores.getStoreById.mockResolvedValue([{ id: store_id }]);
+    isServiceOptionHoldValid.mockRejectedValue(new Error("Hold has expired"));
+
+    await expect(
+      create_pickup_order(
+        fakeOrderId,
+        store_id,
+        service_option_hold_id,
+        items,
+        user_id,
+        mockLogger
+      )
+    ).rejects.toThrow("Hold has expired");
+
+    expect(Stores.getStoreById).toHaveBeenCalledWith(store_id);
+    expect(isServiceOptionHoldValid).toHaveBeenCalledWith(
+      service_option_hold_id
+    );
+    expect(checkProductStock).not.toHaveBeenCalled();
+    expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
+    expect(updateQtyinDb).not.toHaveBeenCalled();
+    expect(Order.pickupOrder).not.toHaveBeenCalled();
+  });
+
+  // Product Stock Errors
+  it("should throw error when checkProductStock fails", async () => {
+    let fakeOrderId = "abc123";
+    let store_id = 1;
+    let service_option_hold_id = 123;
+    let items = [123];
+    let user_id = "test User";
+
+    Stores.getStoreById.mockResolvedValue([{ id: store_id }]);
+    isServiceOptionHoldValid.mockResolvedValue(true);
+    checkProductStock.mockRejectedValue(new Error("Product not found"));
+
+    await expect(
+      create_pickup_order(
+        fakeOrderId,
+        store_id,
+        service_option_hold_id,
+        items,
+        user_id,
+        mockLogger
+      )
+    ).rejects.toThrow("Product not found");
+
+    expect(checkProductStock).toHaveBeenCalledWith(items, store_id);
+    expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
+    expect(updateQtyinDb).not.toHaveBeenCalled();
+    expect(Order.pickupOrder).not.toHaveBeenCalled();
+  });
+
+  it("should throw error when insufficient stock", async () => {
+    let fakeOrderId = "abc123";
+    let store_id = 1;
+    let service_option_hold_id = 123;
+    let items = [{ upc: 123, qty: 5 }];
+    let user_id = "test User";
+
+    Stores.getStoreById.mockResolvedValue([{ id: store_id }]);
+    isServiceOptionHoldValid.mockResolvedValue(true);
+    checkProductStock.mockResolvedValue({
+      problems: true,
+      data: [{ upc: 123, status: "insufficient", available: 2, requested: 5 }],
+    });
+
+    await expect(
+      create_pickup_order(
+        fakeOrderId,
+        store_id,
+        service_option_hold_id,
+        items,
+        user_id,
+        mockLogger
+      )
+    ).rejects.toThrow("UPC 123");
+
+    expect(checkProductStock).toHaveBeenCalledWith(items, store_id);
+    expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
+    expect(updateQtyinDb).not.toHaveBeenCalled();
+    expect(Order.pickupOrder).not.toHaveBeenCalled();
+  });
+
+  // Database Operation Errors
+  it("should throw error when markServiceOptionHoldTaken fails", async () => {
+    let fakeOrderId = "abc123";
+    let store_id = 1;
+    let service_option_hold_id = 123;
+    let items = [123];
+    let user_id = "test User";
+
+    Stores.getStoreById.mockResolvedValue([{ id: store_id }]);
+    isServiceOptionHoldValid.mockResolvedValue(true);
+    checkProductStock.mockResolvedValue({ problems: false, data: [] });
+    markServiceOptionHoldTaken.mockRejectedValue(
+      new Error("Failed to mark hold as taken")
+    );
+
+    await expect(
+      create_pickup_order(
+        fakeOrderId,
+        store_id,
+        service_option_hold_id,
+        items,
+        user_id,
+        mockLogger
+      )
+    ).rejects.toThrow("Failed to mark hold as taken");
+
+    expect(markServiceOptionHoldTaken).toHaveBeenCalledWith(
+      service_option_hold_id
+    );
+    expect(updateQtyinDb).not.toHaveBeenCalled();
+    expect(Order.pickupOrder).not.toHaveBeenCalled();
+  });
+
+  it("should throw error when updateQtyinDb fails", async () => {
+    let fakeOrderId = "abc123";
+    let store_id = 1;
+    let service_option_hold_id = 123;
+    let items = [123];
+    let user_id = "test User";
+
+    Stores.getStoreById.mockResolvedValue([{ id: store_id }]);
+    isServiceOptionHoldValid.mockResolvedValue(true);
+    checkProductStock.mockResolvedValue({ problems: false, data: [] });
+    markServiceOptionHoldTaken.mockResolvedValue({ rowCount: 1 });
+    updateQtyinDb.mockRejectedValue(new Error("Failed to update stock"));
+
+    await expect(
+      create_pickup_order(
+        fakeOrderId,
+        store_id,
+        service_option_hold_id,
+        items,
+        user_id,
+        mockLogger
+      )
+    ).rejects.toThrow("Failed to update stock");
+
+    expect(updateQtyinDb).toHaveBeenCalledWith(items, store_id);
+    expect(Order.pickupOrder).not.toHaveBeenCalled();
+  });
+
+  it("should throw error when order insert fails", async () => {
+    let fakeOrderId = "abc123";
+    let store_id = 1;
+    let service_option_hold_id = 123;
+    let items = [123];
+    let user_id = "test User";
+
+    Stores.getStoreById.mockResolvedValue([{ id: store_id }]);
+    isServiceOptionHoldValid.mockResolvedValue(true);
+    checkProductStock.mockResolvedValue({ problems: false, data: [] });
+    markServiceOptionHoldTaken.mockResolvedValue({ rowCount: 1 });
+    updateQtyinDb.mockResolvedValue({ rowCount: 1 });
+    Order.pickupOrder.mockResolvedValue({ rowCount: 0, command: "INSERT" });
+
+    await expect(
+      create_pickup_order(
+        fakeOrderId,
+        store_id,
+        service_option_hold_id,
+        items,
+        user_id,
+        mockLogger
+      )
+    ).rejects.toThrow("There were some issues creating your order");
+
+    expect(Order.pickupOrder).toHaveBeenCalledWith(
+      fakeOrderId,
+      store_id,
+      service_option_hold_id,
+      user_id
+    );
+  });
+
+  // Edge Cases
+  it("should work with string store_id that converts to valid number", async () => {
+    let fakeOrderId = "abc123";
+    let store_id = "123";
+    let service_option_hold_id = 123;
+    let items = [123];
+    let user_id = "test User";
+
+    Stores.getStoreById.mockResolvedValue([{ id: 123 }]);
+    isServiceOptionHoldValid.mockResolvedValue(true);
+    checkProductStock.mockResolvedValue({ problems: false, data: [] });
+    markServiceOptionHoldTaken.mockResolvedValue({ rowCount: 1 });
+    updateQtyinDb.mockResolvedValue({ rowCount: 1 });
+    Order.pickupOrder.mockResolvedValue({
+      rowCount: 1,
+      command: "INSERT",
+      rows: [{ order: fakeOrderId }],
+    });
+
+    let result = await create_pickup_order(
+      fakeOrderId,
+      store_id,
+      service_option_hold_id,
+      items,
+      user_id,
+      mockLogger
+    );
+
+    expect(result.rowCount).toBe(1);
+    expect(Stores.getStoreById).toHaveBeenCalledWith(123); // converted to number
+  });
+
+  it("should throw error for null store_id", async () => {
+    let fakeOrderId = "abc123";
+    let store_id = null;
+    let service_option_hold_id = 123;
+    let items = [123];
+    let user_id = "test User";
+
+    await expect(
+      create_pickup_order(
+        fakeOrderId,
+        store_id,
+        service_option_hold_id,
+        items,
+        user_id,
+        mockLogger
+      )
+    ).rejects.toThrow("Invalid store id");
+
+    expect(Stores.getStoreById).not.toHaveBeenCalled();
+  });
+
+  it("should throw error for undefined store_id", async () => {
+    let fakeOrderId = "abc123";
+    let store_id = undefined;
+    let service_option_hold_id = 123;
+    let items = [123];
+    let user_id = "test User";
+
+    await expect(
+      create_pickup_order(
+        fakeOrderId,
+        store_id,
+        service_option_hold_id,
+        items,
+        user_id,
+        mockLogger
+      )
+    ).rejects.toThrow("Invalid store id");
+
+    expect(Stores.getStoreById).not.toHaveBeenCalled();
+  });
+});
