@@ -17,9 +17,9 @@ async function isServiceOptionHoldValid(id) {
   return true;
 }
 
-async function markServiceOptionHoldTaken(id) {
+async function markServiceOptionHoldTaken(id, client = null) {
   let response = await ServiceOptionHold.updateServiceOptionHold(id);
-  console.log(`Service Option Hold${response}`);
+
   if (response.rowCount === 0) {
     throw new ExpressError(
       "Service Option Hold not found. Please try again later",

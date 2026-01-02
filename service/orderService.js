@@ -10,6 +10,7 @@ const {
   updateQtyinDb,
 } = require("../service/productService");
 const logger = require("../utils/logger");
+const withTransaction = require("../utils/withTransaction");
 async function create_pickup_order(
   order_id,
   store_id,
@@ -53,29 +54,33 @@ async function create_pickup_order(
   }
   //Mark the hold as expired
 
-  log.info(
-    { service_option_hold_id, order_id, storeId },
-    "Marking hold as expired"
-  );
-  await markServiceOptionHoldTaken(service_option_hold_id);
+  // DB updates start here
 
-  // Subtract the items from Products table
-  //TO-DO
-  log.info({ order_id, items }, "Adjusting Stock");
-  await updateQtyinDb(items, storeId);
+  let orderResult = await withTransaction(async (client) => {
+    log.info(
+      { service_option_hold_id, order_id, storeId },
+      "Marking hold as expired"
+    );
+    await markServiceOptionHoldTaken(service_option_hold_id, client);
 
-  // console.log("adjusting stock");
-  // put the order in the DB
-  const orderResponse = await Order.pickupOrder(
-    order_id,
-    storeId,
-    service_option_hold_id,
-    user_id
-  );
+    // Subtract the items from Products table
+    log.info({ order_id, items }, "Adjusting Stock");
+    await updateQtyinDb(items, storeId, client);
 
-  if (orderResponse.rowCount == 1 && orderResponse.command === "INSERT") {
-    log.info({ order_id }, "Order created");
+    // put the order in the DB
+    const orderResponse = await Order.pickupOrder(
+      order_id,
+      storeId,
+      service_option_hold_id,
+      user_id,
+      client
+    );
     return orderResponse;
+  });
+
+  if (orderResult.rowCount == 1 && orderResult.command === "INSERT") {
+    log.info({ order_id }, "Order created");
+    return orderResult;
   } else {
     throw new ExpressError(
       "There were some issues creating your order",
