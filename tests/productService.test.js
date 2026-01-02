@@ -242,5 +242,41 @@ describe("Product Service", () => {
         "Database connection failed"
       );
     });
+
+    it("should use NO_UPDATE error code when nothing updated", async () => {
+      const items = [{ upc: 123, qty: 2 }];
+      const store_id = 1;
+
+      Product.batchUpdateProductQty.mockResolvedValue({ rowCount: 0 });
+
+      try {
+        await updateQtyinDb(items, store_id);
+        fail("Expected error to be thrown");
+      } catch (error) {
+        expect(error.code).toBe("NO_UPDATE");
+        expect(error.statusCode).toBe(400);
+        expect(error.message).toBe("Nothing was updated in the DB");
+      }
+    });
+  });
+
+  describe("Error Codes", () => {
+    it("should use ITEM_NOT_FOUND error code when no items found", async () => {
+      const items = [{ upc: 123, qty: 2 }];
+      const store_id = 1;
+
+      Product.getProductByUpc.mockResolvedValue({ rows: [] });
+
+      try {
+        await checkProductStock(items, store_id, mockLogger);
+        fail("Expected error to be thrown");
+      } catch (error) {
+        expect(error.code).toBe("ITEM_NOT_FOUND");
+        expect(error.statusCode).toBe(400);
+        expect(error.message).toBe(
+          "None of the items you requested are available"
+        );
+      }
+    });
   });
 });
