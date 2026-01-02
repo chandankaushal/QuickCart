@@ -25,14 +25,14 @@ const Product = {
       items.length * 2 + 2
     } AND qty >= CASE upc ${caseStatement} ELSE 0 END`;
     let finalStatement = preStatement + caseStatement + endStatement; // Combining all statements to make one
-    console.log(finalStatement);
+    // console.log(finalStatement);
 
     let params = items.flatMap((item) => [item.upc, item.qty]); //UPC and qty for CASE Statements
     let upcs = items.map((item) => item.upc); // UPC for Where clause
 
     params.push(upcs); // Pushing upcs for where clause in params
     params.push(store_id); // pushing store_id as param
-    console.log(params);
+    // console.log(params);
 
     let queryResult = await pool.query(finalStatement, params);
     return queryResult;

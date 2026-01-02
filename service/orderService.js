@@ -22,7 +22,7 @@ async function create_pickup_order(
   const storeId = Number(store_id);
   // console.log(store_id);
 
-  if (!Number.isInteger(store_id)) {
+  if (!Number.isInteger(storeId) || !store_id) {
     throw new ExpressError("Invalid store id", 400, "INVALID_STORE_ID");
   }
   log.info({ order_id, storeId }, "Checking if Store Exists");
@@ -39,11 +39,11 @@ async function create_pickup_order(
     { order_id, storeId, service_option_hold_id },
     "checking if the hold is not expired"
   );
-  let isholdValid = await isServiceOptionHoldValid(service_option_hold_id);
+  await isServiceOptionHoldValid(service_option_hold_id);
 
   //check if the items are available
   log.info({ items, storeId, order_id }, "checking product availabilty");
-  const isProductAvailable = await checkProductStock(items, store_id);
+  const isProductAvailable = await checkProductStock(items, storeId);
   if (isProductAvailable.problems) {
     throw new ExpressError(
       `UPC ${isProductAvailable.data.map((el) => el.upc).join(",")}`,
@@ -57,20 +57,18 @@ async function create_pickup_order(
     { service_option_hold_id, order_id, storeId },
     "Marking hold as expired"
   );
-  let expired_hold_response = await markServiceOptionHoldTaken(
-    service_option_hold_id
-  );
+  await markServiceOptionHoldTaken(service_option_hold_id);
 
   // Subtract the items from Products table
   //TO-DO
-  log.info({ order_id, items, order_id }, "Adjusting Stock");
-  let updateQtyResponse = await updateQtyinDb(items, storeId);
+  log.info({ order_id, items }, "Adjusting Stock");
+  await updateQtyinDb(items, storeId);
 
   // console.log("adjusting stock");
   // put the order in the DB
   const orderResponse = await Order.pickupOrder(
     order_id,
-    store_id,
+    storeId,
     service_option_hold_id,
     user_id
   );
