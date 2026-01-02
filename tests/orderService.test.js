@@ -10,6 +10,7 @@ const {
   updateQtyinDb,
 } = require("../service/productService");
 const { create_pickup_order } = require("../service/orderService");
+const withTransaction = require("../utils/withTransaction");
 
 const mockLogger = {
   info: jest.fn(),
@@ -20,11 +21,18 @@ jest.mock("../models/orderModel");
 jest.mock("../models/storeModel");
 jest.mock("../service/serviceOptionHoldService");
 jest.mock("../service/productService");
+jest.mock("../utils/withTransaction");
+
+const mockClient = {};
 
 describe("Create Order Service", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    withTransaction.mockImplementation(async (callback) => {
+      return await callback(mockClient);
+    });
   });
+
   it("should return a successful response if an order is created", async () => {
     let fakeOrderId = "abc123";
     let store_id = 1;
@@ -105,12 +113,14 @@ describe("Create Order Service", () => {
       fakeOrderId,
       store_id,
       service_option_hold_id,
-      user_id
+      user_id,
+      mockClient
     );
 
-    expect(updateQtyinDb).toHaveBeenCalledWith(items, store_id);
+    expect(updateQtyinDb).toHaveBeenCalledWith(items, store_id, mockClient);
     expect(markServiceOptionHoldTaken).toHaveBeenCalledWith(
-      service_option_hold_id
+      service_option_hold_id,
+      mockClient
     );
     expect(checkProductStock).toHaveBeenCalledWith(items, store_id);
     expect(isServiceOptionHoldValid).toHaveBeenCalledWith(
@@ -314,7 +324,8 @@ describe("Create Order Service", () => {
     ).rejects.toThrow("Failed to mark hold as taken");
 
     expect(markServiceOptionHoldTaken).toHaveBeenCalledWith(
-      service_option_hold_id
+      service_option_hold_id,
+      mockClient
     );
     expect(updateQtyinDb).not.toHaveBeenCalled();
     expect(Order.pickupOrder).not.toHaveBeenCalled();
@@ -344,7 +355,7 @@ describe("Create Order Service", () => {
       )
     ).rejects.toThrow("Failed to update stock");
 
-    expect(updateQtyinDb).toHaveBeenCalledWith(items, store_id);
+    expect(updateQtyinDb).toHaveBeenCalledWith(items, store_id, mockClient);
     expect(Order.pickupOrder).not.toHaveBeenCalled();
   });
 
@@ -377,7 +388,8 @@ describe("Create Order Service", () => {
       fakeOrderId,
       store_id,
       service_option_hold_id,
-      user_id
+      user_id,
+      mockClient
     );
   });
 

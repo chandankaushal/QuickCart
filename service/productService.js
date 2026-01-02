@@ -66,7 +66,7 @@ async function checkProductStock(items, store_id, log = logger) {
   return { data: stockChecks, problems: false };
 }
 
-async function updateQtyinDb(items, store_id) {
+async function updateQtyinDb(items, store_id, client = null) {
   let { rowCount: products_updated } = await Product.batchUpdateProductQty(
     items,
     store_id

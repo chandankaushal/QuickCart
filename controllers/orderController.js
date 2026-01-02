@@ -3,8 +3,6 @@ const { sendSuccess } = require("../utils/apiResponse");
 
 async function createPickupOrder(req, res) {
   let { order_id, location_code, service_option_hold_id, items } = req.body;
-  //   console.log("controller");
-  console.log("Executing Controller");
   let user_id = req.user.id;
   let response = await create_pickup_order(
     order_id,
