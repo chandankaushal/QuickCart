@@ -2,10 +2,17 @@ const {
   loginUser,
   registerUser,
   getUserByEmail,
+  new_access_token_from_refresh_token,
 } = require("../service/userService");
 const User = require("../models/userModel");
 const { hashPassword, comparePassword } = require("../utils/hash");
-const { getToken, storeTokenInDB } = require("../utils/auth");
+const {
+  getToken,
+  storeTokenInDB,
+  refreshToken,
+  storeRefreshTokenInDB,
+} = require("../utils/auth");
+const jwt_token = require("../models/jwtTokenModel");
 const { validateEmail } = require("../utils/validEmail");
 
 //Need this to Mock the functions
@@ -13,6 +20,7 @@ jest.mock("../models/userModel");
 jest.mock("../utils/hash");
 jest.mock("../utils/auth");
 jest.mock("../utils/validEmail");
+jest.mock("../models/jwtTokenModel");
 
 const mockLogger = {
   info: jest.fn(),
@@ -44,6 +52,7 @@ describe("loginUser function", () => {
     comparePassword.mockResolvedValue(true);
     getToken.mockReturnValue("fake.jwt.token");
     storeTokenInDB.mockResolvedValue(true);
+    storeRefreshTokenInDB.mockResolvedValue(true);
 
     const result = await loginUser(testEmail, testPassword, mockLogger);
     expect(result).toEqual({ access_token: "fake.jwt.token" });
@@ -205,4 +214,77 @@ describe("getUserByEmail", () => {
     expect(validateEmail).toHaveBeenCalledWith(testEmail);
     expect(User.getByEmail).toHaveBeenCalledWith(testEmail);
   });
+  describe("Refresh Token Tests", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+    it("should generate a refresh token when valid token is passed", async () => {
+      let jti = "abc123";
+      let token = "token";
+      let fakeRefreshToken = "refresh token";
+      let userObj = {
+        id: "user123",
+        email: "fakeUser@test.com",
+        role: "fakeRole",
+      };
+
+      let jwtTokenDbResponse = {
+        rowCount: 1,
+      };
+
+      let finalResult = {
+        access_token: token,
+        refresh_token: fakeRefreshToken,
+      };
+      jwt_token.deleteRefreshTokenFromDb.mockResolvedValue(jwtTokenDbResponse);
+      getToken.mockReturnValue(token);
+      refreshToken.mockReturnValue(fakeRefreshToken);
+      storeTokenInDB.mockResolvedValue(true);
+      storeRefreshTokenInDB.mockResolvedValue(true);
+
+      let result = await new_access_token_from_refresh_token(
+        jti,
+        userObj,
+        mockLogger
+      );
+
+      expect(result).toEqual(finalResult);
+    });
+
+    it("should return an error when storing token in DB fails", async () => {
+      let jti = "abc123";
+      let token = "token";
+      let fakeRefreshToken = "refresh token";
+      let userObj = {
+        id: "user123",
+        email: "fakeUser@test.com",
+        role: "fakeRole",
+      };
+
+      let jwtTokenDbResponse = {
+        rowCount: 1,
+      };
+
+      let finalResult = {
+        access_token: token,
+        refresh_token: fakeRefreshToken,
+      };
+      jwt_token.deleteRefreshTokenFromDb.mockResolvedValue(jwtTokenDbResponse);
+      getToken.mockReturnValue(token);
+      refreshToken.mockReturnValue(fakeRefreshToken);
+      storeTokenInDB.mockResolvedValue(true);
+      storeRefreshTokenInDB.mockRejectedValue(
+        new Error(
+          "There was an error with your request. Please try again later"
+        )
+      );
+
+      await expect(
+        new_access_token_from_refresh_token(jti, userObj, mockLogger)
+      ).rejects.toThrow(
+        "There was an error with your request. Please try again later"
+      );
+    });
+  });
+  //Need to write more tests here
 });

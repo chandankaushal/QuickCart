@@ -2,6 +2,8 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const jwt_token = require("../models/jwtTokenModel");
+const { ExpressError } = require("./ExpressError");
+const logger = require("../utils/logger");
 
 function getToken(user) {
   return jwt.sign(
@@ -46,7 +48,7 @@ async function storeTokenInDB(token) {
 
   return true;
 }
-async function storeRefreshTokenInDB(token) {
+async function storeRefreshTokenInDB(token, log = logger) {
   const decoded = jwt.decode(token);
   if (!decoded || !decoded.id || !decoded.jti) {
     throw new Error("Invalid token: missing required fields");
@@ -56,7 +58,19 @@ async function storeRefreshTokenInDB(token) {
   const issue_time = decoded.iat ? new Date(decoded.iat * 1000) : null;
   const expires_at = decoded.exp ? new Date(decoded.exp * 1000) : null;
 
-  await jwt_token.addRefeshToDB(token_id, user_id, issue_time, expires_at);
+  await jwt_token
+    .addRefeshToDB(token_id, user_id, issue_time, expires_at)
+    .catch((error) => {
+      log.warn(
+        { error, token_id },
+        "There was an error with storing token in DB"
+      );
+      throw new ExpressError(
+        "There was an error with your request. Please try again later",
+        500,
+        "INTERNAL_SERVER_ERROR"
+      );
+    });
 
   return true;
 }
