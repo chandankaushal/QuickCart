@@ -22,7 +22,7 @@ async function getUsers(req, res) {
 async function signupUser(req, res) {
   let { name, email, password } = req.body;
   let response = await registerUser(name, email, password, req.log);
-  sendSuccess(res, null, `${response.rowCount} user successfully created`, 200);
+  sendSuccess(res, null, `User successfully created`, 200);
 }
 
 async function deleteUser(req, res) {
