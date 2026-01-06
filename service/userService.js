@@ -1,8 +1,14 @@
 const { validateEmail } = require("../utils/validEmail");
 const User = require("../models/userModel");
+const jwt_token = require("../models/jwtTokenModel");
 const { ExpressError } = require("../utils/ExpressError");
 const { comparePassword, hashPassword } = require("../utils/hash");
-const { getToken, storeTokenInDB } = require("../utils/auth");
+const {
+  getToken,
+  storeTokenInDB,
+  refreshToken,
+  storeRefreshTokenInDB,
+} = require("../utils/auth");
 const crypto = require("crypto");
 const logger = require("../utils/logger");
 
@@ -54,12 +60,20 @@ async function loginUser(email, password, log = logger) {
     };
     let access_token = getToken(userObj);
     log.info("Generated Access Token");
+    let refresh_token = refreshToken(userObj);
+    // console.log(`Generated Refresh Token ${refreshToken}`);
+
     // NO await in storing token because we dont want to block.
     log.info("Storing token in DB");
     storeTokenInDB(access_token).catch((err) =>
       log.warn(`${err},"Failed to store token in DB`)
     );
-    return { access_token: access_token };
+    // console.log("Storing Refresh Token in DB");
+    storeRefreshTokenInDB(refresh_token).catch((err) =>
+      log.warn(`${err},"Failed to store refresh token in DB`)
+    );
+
+    return { access_token: access_token, refresh_token: refresh_token };
   } else {
     throw new ExpressError(
       "Please check your credentials",
@@ -76,5 +90,27 @@ async function registerUser(name, email, password, log = logger) {
   let response = await User.register(uuid, name, email, hashedPassword);
   return response;
 }
+async function new_access_token_from_refresh_token(jti, userObj, log = logger) {
+  const remove = await jwt_token.deleteRefreshTokenFromDb(jti); //Removing Refresh Token from DB to avoid using this again
+  if (remove.rowCount === 0) {
+    log.warn("Nothing to remove from DB");
+  }
+  let access_token = getToken(userObj); // Generating New Access Token
+  let refresh_token = refreshToken(userObj); // New Refresh Token
+  log.info("Storing  new access token in DB");
+  storeTokenInDB(access_token).catch((err) =>
+    log.warn(`${err},"Failed to store token in DB`)
+  );
+  log.info("Storing new refresh token in db");
+  // Await here because storing DB is important for Refresh Token
+  await storeRefreshTokenInDB(refresh_token);
 
-module.exports = { getUserByEmail, loginUser, registerUser };
+  return { access_token: access_token, refresh_token: refresh_token };
+}
+
+module.exports = {
+  getUserByEmail,
+  loginUser,
+  registerUser,
+  new_access_token_from_refresh_token,
+};

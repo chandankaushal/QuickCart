@@ -1,16 +1,13 @@
 const pool = require("../db");
-const crypto = require("crypto");
-const { validateEmail } = require("../utils/validEmail");
-const { hashPassword, comparePassword } = require("../utils/hash");
-const { userSchema } = require("../models/joiSchema");
-const { getToken } = require("../utils/auth");
 const {
   getUserByEmail,
   loginUser,
   registerUser,
+  new_access_token_from_refresh_token,
 } = require("../service/userService");
 
-const { sendSuccess } = require("../utils/apiResponse");
+const { sendSuccess, setRefreshTokenCookie } = require("../utils/apiResponse");
+const logger = require("../utils/logger");
 
 let user_table = `"quickcart".users`;
 
@@ -57,7 +54,32 @@ async function login(req, res) {
   req.log.info({ email }, "Login attempt started");
   const response = await loginUser(email, password, req.log);
   req.log.info({ email }, "User Logged in Successfully");
-  sendSuccess(res, null, response, 200);
+  setRefreshTokenCookie(res, response.refresh_token);
+  sendSuccess(res, null, response.access_token, 200);
 }
 
-module.exports = { getUsers, signupUser, deleteUser, updateUser, login };
+async function refreshToken(req, res) {
+  let { jti } = req.user;
+  let userObj = {
+    id: req.user.id,
+    email: req.user.email,
+    role: req.user.role,
+  };
+  let new_access_token = await new_access_token_from_refresh_token(
+    jti,
+    userObj,
+    req.log
+  );
+  //Adding new refresh token to the cookie
+  setRefreshTokenCookie(res, new_access_token.refresh_token);
+  sendSuccess(res, null, new_access_token.access_token, 200);
+}
+
+module.exports = {
+  getUsers,
+  signupUser,
+  deleteUser,
+  updateUser,
+  login,
+  refreshToken,
+};
