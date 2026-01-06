@@ -4,16 +4,25 @@ A robust RESTful API for managing an e-commerce cart system with user authentica
 
 ## 🚀 Features
 
-- **User Management**: Registration, login, and authentication with JWT
-- **Store Management**: Multi-store support with location-based services
-- **Product Catalog**: Product availability checking and inventory management
-- **Order Processing**: Pickup order creation and management
-- **Service Options**: Configurable service options with hold mechanisms
-- **Monitoring**: Health check and monitoring endpoints
-- **Logging**: Comprehensive logging with Pino and Datadog integration
-- **Error Handling**: Centralized error handling with custom error types
+### ✅ Implemented
+
+- **User Management**: Registration, login, and JWT-based authentication
+- **Token System**: Access tokens + refresh tokens with HTTP-only cookies
+- **Token Security**: Database-stored tokens with automatic revocation on suspected theft
+- **Store Management**: Location-based store lookup by zip code
+- **Product Catalog**: Product availability and stock checking by UPC
+- **Order Processing**: Pickup order creation with transactional integrity
+- **Service Options**: Time slot reservation with hold/expiry mechanism
+- **Monitoring**: Database health check endpoint
+- **Logging**: Structured JSON logging with Pino + Datadog APM integration
+- **Error Handling**: Centralized error handling with custom ExpressError class
 - **Input Validation**: Request validation using Joi schemas
-- **Security**: Password hashing with bcrypt, JWT authentication
+- **Security**: Password hashing with bcrypt, parameterized SQL queries
+- **Testing**: Jest test suite with 56% code coverage
+
+### 🚧 Partially Implemented
+
+- **User Update**: Endpoint exists but not fully implemented
 
 ## 📋 Prerequisites
 
@@ -49,6 +58,9 @@ DATABASE_PASSWORD=your_password
 DATABASE_NAME=quickcart
 JWT_SECRET=your_jwt_secret_key
 JWT_EXPIRES_IN=1h
+JWT_REFRESH_SECRET=your_refresh_secret_key
+JWT_REFRESH_EXPIRES_IN=7d
+NODE_ENV=development
 ENVIRONMENT=dev
 SERVICE_NAME=quickcart
 ```
@@ -66,11 +78,11 @@ psql -d quickcart -f DB_SCHEMA/usersTable.js
 5. Start the server:
 
 ```bash
-# Development with auto-reload
-npm run dev
+# Development with auto-reload (add script to package.json first)
+npx nodemon index.js
 
 # Production
-npm start
+node index.js
 ```
 
 ## 📁 Project Structure
@@ -84,14 +96,15 @@ QuickCart/
 │   ├── orderController.js
 │   ├── serviceOptionsController.js
 │   └── monitoringController.js
-├── models/             # Database models
+├── models/             # Database models & validation
 │   ├── userModel.js
 │   ├── storeModel.js
 │   ├── productModel.js
 │   ├── orderModel.js
 │   ├── serviceOptionModel.js
 │   ├── serviceOptionsHoldModel.js
-│   └── joiSchema.js    # Validation schemas
+│   ├── jwtTokenModel.js    # JWT token DB operations
+│   └── joiSchema.js        # Joi validation schemas
 ├── service/            # Business logic layer
 │   ├── userService.js
 │   ├── storeService.js
@@ -107,77 +120,121 @@ QuickCart/
 │   ├── serviceOptionsRoutes.js
 │   └── monitoringRoutes.js
 ├── middleware/         # Custom middleware
-│   ├── auth.js        # JWT authentication
-│   ├── validate.js    # Request validation
-│   ├── error.js       # Error handling
-│   └── pinoLogger.js  # Request logging
+│   ├── auth.js        # JWT authentication & refresh token validation
+│   ├── validate.js    # Request validation with Joi
+│   ├── error.js       # Centralized error handling
+│   └── pinoLogger.js  # Request logging with Pino
 ├── utils/              # Utility functions
-│   ├── hash.js        # Password hashing
-│   ├── auth.js        # JWT token generation
+│   ├── hash.js        # Password hashing (bcrypt)
+│   ├── auth.js        # JWT token generation & storage
 │   ├── validEmail.js  # Email validation
-│   ├── apiResponse.js # Standardized responses
+│   ├── apiResponse.js # Standardized API responses
 │   ├── logger.js      # Pino logger configuration
 │   ├── wrapAsync.js   # Async error wrapper
+│   ├── withTransaction.js # Database transaction helper
+│   ├── items.js       # Item utilities
 │   └── ExpressError.js # Custom error class
+├── tests/              # Jest test files
+│   ├── hashPassword.test.js
+│   ├── validateEmail.test.js
+│   ├── userService.test.js
+│   ├── storeService.test.js
+│   ├── productService.test.js
+│   ├── orderService.test.js
+│   └── serviceOptionsService.test.js
+├── coverage/           # Test coverage reports
 ├── logs/               # Application logs
-├── tests/              # Test files
 ├── DB_SCHEMA/          # Database schemas
-├── db.js               # Database connection
+├── db.js               # PostgreSQL connection pool
 ├── index.js            # Application entry point
+├── Dockerfile          # Docker configuration
 └── package.json        # Dependencies and scripts
 ```
+
+## 🛒 Order Flow
+
+The pickup order creation follows this sequence:
+
+1. **Find Stores** → `POST /stores/get_stores` with zip code
+2. **Check Availability** → `POST /products/checkAvailability` with items and store
+3. **Get Service Options** → `POST /service_options/pickup` for available time slots
+4. **Reserve Slot** → `POST /service_options/reserve` to hold a time slot
+5. **Create Order** → `POST /orders/pickup/create_order` with held slot ID
+
+The order creation process runs in a database transaction:
+
+- Validates service option hold is not expired
+- Verifies product availability
+- Marks service option hold as taken
+- Updates product quantities
+- Creates the order record
 
 ## 🔌 API Endpoints
 
 ### User Management
 
-```
-POST   /users/register      - Register a new user
-POST   /users/login         - User login
-GET    /users/show          - Get user by email (authenticated)
-PUT    /users/update        - Update user (authenticated)
-DELETE /users/delete        - Delete user (authenticated)
-```
+| Method | Endpoint          | Auth  | Description                         |
+| ------ | ----------------- | ----- | ----------------------------------- |
+| POST   | `/users/register` | No    | Register a new user                 |
+| POST   | `/users/login`    | No    | User login (returns JWT tokens)     |
+| GET    | `/users/show`     | Yes   | Get user by email (query param)     |
+| PUT    | `/users/update`   | No    | Update user (not fully implemented) |
+| DELETE | `/users/delete`   | No    | Delete user by email                |
+| POST   | `/users/refresh`  | Yes\* | Refresh access token using cookie   |
+
+\*Uses refresh token from HTTP-only cookie
 
 ### Store Management
 
-```
-POST   /stores/get_stores   - Get available stores (authenticated)
-```
+| Method | Endpoint             | Auth | Description                       |
+| ------ | -------------------- | ---- | --------------------------------- |
+| POST   | `/stores/get_stores` | Yes  | Get stores by zip code and street |
 
 ### Products
 
-```
-POST   /products/checkAvailability  - Check product availability
-```
+| Method | Endpoint                      | Auth | Description                      |
+| ------ | ----------------------------- | ---- | -------------------------------- |
+| POST   | `/products/checkAvailability` | No   | Check product stock availability |
 
 ### Orders
 
-```
-POST   /orders/pickup/create_order  - Create pickup order (authenticated)
-```
+| Method | Endpoint                      | Auth | Description           |
+| ------ | ----------------------------- | ---- | --------------------- |
+| POST   | `/orders/pickup/create_order` | Yes  | Create a pickup order |
 
 ### Service Options
 
-```
-GET    /service_options/get         - Get service options (authenticated)
-POST   /service_options/hold        - Hold service option (authenticated)
-POST   /service_options/release     - Release held option (authenticated)
-```
+| Method | Endpoint                   | Auth | Description                         |
+| ------ | -------------------------- | ---- | ----------------------------------- |
+| POST   | `/service_options/pickup`  | Yes  | Get pickup service options by store |
+| POST   | `/service_options/reserve` | Yes  | Reserve a service option slot       |
 
 ### Monitoring
 
-```
-GET    /monitoring/health           - Health check endpoint
-```
+| Method | Endpoint         | Auth | Description                      |
+| ------ | ---------------- | ---- | -------------------------------- |
+| GET    | `/`              | No   | Server health check              |
+| GET    | `/monitoring/db` | No   | Database connection health check |
 
 ## 🔐 Authentication
 
-The API uses JWT (JSON Web Tokens) for authentication. Include the token in the Authorization header:
+The API uses JWT (JSON Web Tokens) for authentication with a refresh token mechanism.
+
+### Access Token
+
+Include the access token in the Authorization header:
 
 ```
-Authorization: Bearer <your_jwt_token>
+Authorization: Bearer <your_access_token>
 ```
+
+### Refresh Token
+
+- Stored as HTTP-only secure cookie (`refresh_token`)
+- Automatically set on login
+- Use `POST /users/refresh` to get a new access token
+- Tokens are stored in database for validation and revocation
+- Automatic revocation of all tokens on suspected theft
 
 ## 📝 Request Examples
 
@@ -189,9 +246,15 @@ curl -X POST http://localhost:2000/users/register \
   -d '{
     "name": "John Doe",
     "email": "john@example.com",
-    "password": "SecurePassword123"
+    "password": "SecurePass123"
   }'
 ```
+
+**Validation:**
+
+- `name`: 3-30 characters, required
+- `email`: valid email format, required
+- `password`: minimum 4 characters, required
 
 ### Login
 
@@ -200,47 +263,98 @@ curl -X POST http://localhost:2000/users/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "john@example.com",
-    "password": "SecurePassword123"
+    "password": "SecurePass123"
   }'
 ```
 
-### Create Order (Authenticated)
+**Response:** Access token in body, refresh token as HTTP-only cookie
+
+### Get Stores by Location
+
+```bash
+curl -X POST http://localhost:2000/stores/get_stores \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "zip_code": 12345,
+    "street": "Main St"
+  }'
+```
+
+### Check Product Availability
+
+```bash
+curl -X POST http://localhost:2000/products/checkAvailability \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      { "upc": 123456789, "qty": 2 },
+      { "upc": 987654321, "qty": 1 }
+    ],
+    "location_code": 1001
+  }'
+```
+
+### Get Service Options for Pickup
+
+```bash
+curl -X POST http://localhost:2000/service_options/pickup \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "store_id": 1001
+  }'
+```
+
+### Reserve Service Option
+
+```bash
+curl -X POST http://localhost:2000/service_options/reserve \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "service_option_id": 5
+  }'
+```
+
+### Create Pickup Order (Authenticated)
 
 ```bash
 curl -X POST http://localhost:2000/orders/pickup/create_order \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "store_id": "store-uuid",
-    "products": [
-      {
-        "product_id": "product-uuid",
-        "quantity": 2
-      }
-    ],
-    "service_option_id": "option-uuid"
+    "order_id": "550e8400-e29b-41d4-a716-446655440000",
+    "location_code": 1001,
+    "service_option_hold_id": 123,
+    "items": [
+      { "upc": 123456789, "qty": 2 },
+      { "upc": 987654321, "qty": 1 }
+    ]
   }'
+```
+
+**Validation:**
+
+- `order_id`: UUID format, required
+- `location_code`: integer, required
+- `service_option_hold_id`: integer (from reserve step), required
+- `items`: array of objects with `upc` (integer) and `qty` (min 1), required
+
+### Refresh Access Token
+
+```bash
+curl -X POST http://localhost:2000/users/refresh \
+  -H "Cookie: refresh_token=YOUR_REFRESH_TOKEN"
 ```
 
 ## 🧪 Testing
 
-Install test dependencies:
-
-```bash
-npm install --save-dev jest supertest
-```
-
-Run tests:
+Tests are written using Jest (^30.2.0). Run tests:
 
 ```bash
 # Run all tests
 npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run with coverage
-npm run test:coverage
 ```
 
 ## 📊 Logging & Monitoring
@@ -271,15 +385,30 @@ All errors follow a consistent format:
 
 ### Common Error Codes
 
-| Code                    | Description          | Status Code |
-| ----------------------- | -------------------- | ----------- |
-| `NO_USER_EXISTS`        | User not found       | 400         |
-| `UNAUTHORIZED`          | Invalid credentials  | 401         |
-| `NO_USER_ID`            | Missing user ID      | 400         |
-| `UNIQUE_VIOLATION`      | Duplicate record     | 409         |
-| `FOREIGN_KEY_VIOLATION` | Invalid reference    | 400         |
-| `INVALID_INPUT`         | Invalid input format | 400         |
-| `INTERNAL_ERROR`        | Server error         | 500         |
+| Code                            | Description                          | Status Code |
+| ------------------------------- | ------------------------------------ | ----------- |
+| `NO_USER_EXISTS`                | User not found                       | 400         |
+| `NO_USER_FOUND`                 | User does not exist or no permission | 400         |
+| `NO_USER_ID`                    | Missing user ID                      | 400         |
+| `INVALID_EMAIL`                 | Email format is invalid              | 400         |
+| `UNAUTHORIZED`                  | Invalid credentials                  | 401         |
+| `MISSING_OR_NO_TOKEN`           | Auth token missing or invalid        | 401         |
+| `NO_STORES_FOUND`               | No stores for location               | 400         |
+| `ITEM_NOT_FOUND`                | Product not found in inventory       | 400         |
+| `NOT_AVAILABLE`                 | Products not available               | 400         |
+| `NO_UPDATE`                     | Nothing was updated in DB            | 400         |
+| `NOT_FOUND`                     | Resource not found                   | 400         |
+| `INVALID_STORE_ID`              | Invalid store identifier             | 400         |
+| `INVALID_SERVICE_OPTION`        | Service option ID invalid            | 400         |
+| `SERVICE_OPTION_ALREADY_TAKEN`  | Service option slot taken            | 400         |
+| `SERVICE_OPTION_RESERVE_ERROR`  | Failed to reserve service option     | 500         |
+| `SERVICE_OPTION_HOLD_NOT_FOUND` | Service option hold not found        | 404         |
+| `SERVICE_OPTIONS_HOLD_EXPIRED`  | Service option hold expired          | 400         |
+| `UNIQUE_VIOLATION`              | Duplicate record (PostgreSQL)        | 409         |
+| `FOREIGN_KEY_VIOLATION`         | Invalid reference (PostgreSQL)       | 400         |
+| `INVALID_INPUT`                 | Invalid input format (PostgreSQL)    | 400         |
+| `INTERNAL_ERROR`                | Server error                         | 500         |
+| `INTERNAL_SERVER_ERROR`         | Internal server error                | 500         |
 
 ## 🚦 Database Error Handling
 
@@ -294,10 +423,10 @@ PostgreSQL errors are automatically handled by the error middleware:
 ### Available Scripts
 
 ```bash
-npm start       # Start production server
-npm run dev     # Start development server with nodemon
-npm test        # Run tests
+npm test        # Run tests with Jest
 ```
+
+> **Note:** Add `"start": "node index.js"` and `"dev": "nodemon index.js"` to package.json scripts for production/development servers.
 
 ### Adding New Features
 
@@ -320,20 +449,22 @@ npm test        # Run tests
 
 ### Production Dependencies
 
-- **express** (v5.2.1) - Web framework
-- **pg** (v8.16.3) - PostgreSQL client
-- **bcrypt** (v6.0.0) - Password hashing
-- **jsonwebtoken** (v9.0.3) - JWT authentication
-- **joi** (v18.0.2) - Request validation
-- **pino** (v10.1.0) - Logging
-- **dd-trace** (v5.81.0) - Datadog APM
-- **dotenv** (v17.2.3) - Environment configuration
+- **express** (^5.2.1) - Web framework
+- **pg** (^8.16.3) - PostgreSQL client
+- **bcrypt** (^6.0.0) - Password hashing
+- **jsonwebtoken** (^9.0.3) - JWT authentication
+- **joi** (^18.0.2) - Request validation
+- **pino** (^10.1.0) - Logging
+- **pino-http** (^11.0.0) - HTTP request logging
+- **pino-datadog** (^2.0.2) - Datadog log integration
+- **dd-trace** (^5.81.0) - Datadog APM
+- **dotenv** (^17.2.3) - Environment configuration
+- **cookie-parser** (^1.4.7) - Cookie parsing middleware
+- **nodemon** (^3.1.11) - Development auto-reload
 
 ### Development Dependencies
 
-- **nodemon** (v3.1.11) - Development auto-reload
-- **jest** - Testing framework (optional)
-- **supertest** - API testing (optional)
+- **jest** (^30.2.0) - Testing framework
 
 ## 🔒 Security Best Practices
 
@@ -365,7 +496,27 @@ ISC
 - [ ] Add refresh token mechanism
 - [ ] Add email verification
 - [ ] Add password reset functionality
-- [ ] Improve test coverage
+- [x] Add test coverage for core services
+- [ ] Improve test coverage (currently at 56.12% statements, 31.81% branches)
+
+## 📊 Test Coverage
+
+| Metric     | Coverage | Covered/Total |
+| ---------- | -------- | ------------- |
+| Statements | 56.12%   | 55/98         |
+| Branches   | 31.81%   | 7/22          |
+| Functions  | 37.5%    | 6/16          |
+| Lines      | 56.12%   | 55/98         |
+
+### Test Files
+
+- `hashPassword.test.js` - Password hashing utilities
+- `validateEmail.test.js` - Email validation utilities
+- `userService.test.js` - User service layer
+- `storeService.test.js` - Store service layer
+- `productService.test.js` - Product service layer
+- `orderService.test.js` - Order service layer
+- `serviceOptionsService.test.js` - Service options layer
 
 ## 📞 Support
 
