@@ -14,5 +14,13 @@ function sendSuccess(res, message = null, data = {}, status = 200) {
 
   return res.status(status).json(response);
 }
+function setRefreshTokenCookie(res, token) {
+  res.cookie("refresh_token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+}
 
-module.exports = { sendError, sendSuccess };
+module.exports = { sendError, sendSuccess, setRefreshTokenCookie };

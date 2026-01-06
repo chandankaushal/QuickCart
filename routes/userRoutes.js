@@ -6,6 +6,7 @@ const {
   deleteUser,
   updateUser,
   login,
+  refreshToken,
 } = require("../controllers/userController");
 
 const {
@@ -19,7 +20,10 @@ const {
   storeSchema,
   loginSchema,
 } = require("../models/joiSchema");
-const { checkValidToken } = require("../middleware/auth");
+const {
+  checkValidToken,
+  checkValidRefreshToken,
+} = require("../middleware/auth");
 const wrapAsync = require("../utils/wrapAsync");
 
 router.get(
@@ -32,5 +36,10 @@ router.post("/register", validateBody(userSchema), wrapAsync(signupUser));
 router.put("/update", wrapAsync(updateUser));
 router.delete("/delete", wrapAsync(deleteUser));
 router.post("/login", validateBody(loginSchema), wrapAsync(login));
+router.post(
+  "/refresh",
+  wrapAsync(checkValidRefreshToken),
+  wrapAsync(refreshToken)
+);
 
 module.exports = router;

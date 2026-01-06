@@ -16,10 +16,12 @@ const orderRoutes = require("./routes/orderRoutes.js");
 const errorHandler = require("./middleware/error.js");
 const logger = require("./utils/logger");
 const pinoMiddleware = require("./middleware/pinoLogger.js");
+const cookieParser = require("cookie-parser");
 
 const app = express();
 app.use(express.json());
 app.use(pinoMiddleware);
+app.use(cookieParser());
 
 app.get("/", (req, res) => {
   res.send("Server is running ✅");
@@ -38,5 +40,4 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   logger.info(`Server is running on port ${PORT}`);
-  // console.log(`Server running on port ${PORT}`);
 });
