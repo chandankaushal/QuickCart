@@ -3,6 +3,14 @@ const { ExpressError } = require("../utils/ExpressError");
 
 async function isServiceOptionHoldValid(id) {
   let { expires_at } = await ServiceOptionHold.holdById(id);
+  log.info({ service_option_hold_id: id }, "Service Option Hold is valid");
+  if (!expires_at) {
+    throw new ExpressError(
+      "Service option hold not found",
+      404,
+      "SERVICE_OPTION_HOLD_NOT_FOUND"
+    );
+  }
 
   const expiresAt = new Date(expires_at);
   const now = new Date();
@@ -27,6 +35,7 @@ async function markServiceOptionHoldTaken(id, client = null) {
       "NOT_FOUND"
     );
   }
+  log.info({ service_option_hold_id: id }, "Marked Service Option Hold Taken");
   return response;
 }
 
