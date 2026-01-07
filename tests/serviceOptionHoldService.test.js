@@ -128,11 +128,9 @@ describe("markServiceOptionHoldTaken", () => {
     const mockResponse = { rowCount: 1 };
     ServiceOptionHold.updateServiceOptionHold.mockResolvedValue(mockResponse);
 
-    // Note: This test will fail because the service has a bug - `log` is undefined
-    // Uncomment after fixing the service to accept a logger parameter
-    // const result = await markServiceOptionHoldTaken(id);
-    // expect(result).toEqual(mockResponse);
-    // expect(ServiceOptionHold.updateServiceOptionHold).toHaveBeenCalledWith(id);
+    const result = await markServiceOptionHoldTaken(id);
+    expect(result).toEqual(mockResponse);
+    expect(ServiceOptionHold.updateServiceOptionHold).toHaveBeenCalledWith(id);
   });
 
   it("should throw ExpressError when hold is not found (rowCount 0)", async () => {
