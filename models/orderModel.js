@@ -1,5 +1,4 @@
 const pool = require("../db");
-const { ExpressError } = require("../utils/ExpressError");
 
 const ORDERS_TABLE = `"quickcart".orders`;
 
