@@ -1,4 +1,4 @@
-const { hashPassword } = require("../utils/hash");
+const { hashPassword } = require("../../utils/hash");
 
 describe("hashPassword", () => {
   it("should hash a password", async () => {

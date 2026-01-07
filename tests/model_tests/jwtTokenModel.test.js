@@ -1,5 +1,5 @@
-const pool = require("../db");
-const jwt_token = require("../models/jwtTokenModel");
+const pool = require("../../db");
+const jwt_token = require("../../models/jwtTokenModel");
 
 // Mock the database pool
 jest.mock("../db");

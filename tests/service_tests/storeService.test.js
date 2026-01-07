@@ -1,5 +1,5 @@
-const { Stores } = require("../models/storeModel");
-const { getStores } = require("../service/storeService");
+const { Stores } = require("../../models/storeModel");
+const { getStores } = require("../../service/storeService");
 
 jest.mock("../models/storeModel");
 

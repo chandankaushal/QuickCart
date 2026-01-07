@@ -1,11 +1,11 @@
 const jwt = require("jsonwebtoken");
-const jwt_token = require("../models/jwtTokenModel");
+const jwt_token = require("../../models/jwtTokenModel");
 const {
   getToken,
   refreshToken,
   storeTokenInDB,
   storeRefreshTokenInDB,
-} = require("../utils/auth");
+} = require("../../utils/auth");
 
 jest.mock("../models/jwtTokenModel");
 

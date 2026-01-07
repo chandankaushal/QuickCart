@@ -1,16 +1,16 @@
-const { Stores } = require("../models/storeModel");
+const { Stores } = require("../../models/storeModel");
 
 const {
   isServiceOptionHoldValid,
   markServiceOptionHoldTaken,
-} = require("../service/serviceOptionHoldService");
-const Order = require("../models/orderModel");
+} = require("../../service/serviceOptionHoldService");
+const Order = require("../../models/orderModel");
 const {
   checkProductStock,
   updateQtyinDb,
-} = require("../service/productService");
-const { create_pickup_order } = require("../service/orderService");
-const withTransaction = require("../utils/withTransaction");
+} = require("../../service/productService");
+const { create_pickup_order } = require("../../service/orderService");
+const withTransaction = require("../../utils/withTransaction");
 
 const mockLogger = {
   info: jest.fn(),

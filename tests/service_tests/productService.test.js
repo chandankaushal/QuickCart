@@ -1,8 +1,8 @@
 const {
   checkProductStock,
   updateQtyinDb,
-} = require("../service/productService");
-const Product = require("../models/productModel");
+} = require("../../service/productService");
+const Product = require("../../models/productModel");
 
 const mockLogger = {
   info: jest.fn(),

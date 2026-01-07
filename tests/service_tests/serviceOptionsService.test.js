@@ -1,8 +1,8 @@
-const ServiceOptions = require("../models/serviceOptionModel");
+const ServiceOptions = require("../../models/serviceOptionModel");
 const {
   getServiceOptions,
   reserveServiceOption,
-} = require("../service/serviceOptionsService");
+} = require("../../service/serviceOptionsService");
 
 jest.mock("../models/serviceOptionModel");
 

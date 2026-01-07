@@ -1,5 +1,5 @@
-const pool = require("../db");
-const Product = require("../models/productModel");
+const pool = require("../../db");
+const Product = require("../../models/productModel");
 
 // Mock the database pool
 jest.mock("../db");

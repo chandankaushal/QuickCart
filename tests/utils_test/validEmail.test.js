@@ -1,4 +1,4 @@
-const { validateEmail } = require("../utils/validEmail");
+const { validateEmail } = require("../../utils/validEmail");
 
 describe("validateEmail", () => {
   describe("valid emails", () => {

@@ -1,5 +1,5 @@
-const pool = require("../db");
-const ServiceOptions = require("../models/serviceOptionModel");
+const pool = require("../../db");
+const ServiceOptions = require("../../models/serviceOptionModel");
 
 // Mock the database pool
 jest.mock("../db");

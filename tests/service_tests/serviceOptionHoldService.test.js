@@ -1,9 +1,9 @@
-const ServiceOptionHold = require("../models/serviceOptionsHoldModel");
-const { ExpressError } = require("../utils/ExpressError");
+const ServiceOptionHold = require("../../models/serviceOptionsHoldModel");
+const { ExpressError } = require("../../utils/ExpressError");
 const {
   isServiceOptionHoldValid,
   markServiceOptionHoldTaken,
-} = require("../service/serviceOptionHoldService");
+} = require("../../service/serviceOptionHoldService");
 jest.mock("../models/serviceOptionsHoldModel");
 
 const mockLogger = {

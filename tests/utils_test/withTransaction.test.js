@@ -1,5 +1,5 @@
-const pool = require("../db");
-const withTransaction = require("../utils/withTransaction");
+const pool = require("../../db");
+const withTransaction = require("../../utils/withTransaction");
 
 jest.mock("../db");
 
