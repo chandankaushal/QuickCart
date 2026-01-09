@@ -1,7 +1,7 @@
 const { Stores } = require("../../models/storeModel");
 const { getStores } = require("../../service/storeService");
 
-jest.mock("../models/storeModel");
+jest.mock("../../models/storeModel");
 
 const mockLogger = {
   info: jest.fn(),

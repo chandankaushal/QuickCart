@@ -1,7 +1,7 @@
 const pool = require("../../db");
 const withTransaction = require("../../utils/withTransaction");
 
-jest.mock("../db");
+jest.mock("../../db");
 
 describe("withTransaction", () => {
   let mockClient;

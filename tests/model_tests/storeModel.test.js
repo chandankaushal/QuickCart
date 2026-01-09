@@ -2,7 +2,7 @@ const pool = require("../../db");
 const { Stores } = require("../../models/storeModel");
 
 // Mock the database pool
-jest.mock("../db");
+jest.mock("../../db");
 
 describe("Store Model", () => {
   beforeEach(() => {

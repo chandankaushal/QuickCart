@@ -9,7 +9,7 @@ const mockLogger = {
   error: jest.fn(),
 };
 
-jest.mock("../models/productModel");
+jest.mock("../../models/productModel");
 
 describe("Product Service", () => {
   beforeEach(() => {

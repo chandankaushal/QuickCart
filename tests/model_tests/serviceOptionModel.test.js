@@ -2,7 +2,7 @@ const pool = require("../../db");
 const ServiceOptions = require("../../models/serviceOptionModel");
 
 // Mock the database pool
-jest.mock("../db");
+jest.mock("../../db");
 
 describe("ServiceOptions Model", () => {
   beforeEach(() => {

@@ -16,11 +16,11 @@ const jwt_token = require("../../models/jwtTokenModel");
 const { validateEmail } = require("../../utils/validEmail");
 
 //Need this to Mock the functions
-jest.mock("../models/userModel");
-jest.mock("../utils/hash");
-jest.mock("../utils/auth");
-jest.mock("../utils/validEmail");
-jest.mock("../models/jwtTokenModel");
+jest.mock("../../models/userModel");
+jest.mock("../../utils/hash");
+jest.mock("../../utils/auth");
+jest.mock("../../utils/validEmail");
+jest.mock("../../models/jwtTokenModel");
 
 const mockLogger = {
   info: jest.fn(),

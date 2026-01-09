@@ -4,7 +4,7 @@ const {
   reserveServiceOption,
 } = require("../../service/serviceOptionsService");
 
-jest.mock("../models/serviceOptionModel");
+jest.mock("../../models/serviceOptionModel");
 
 const mockLogger = {
   info: jest.fn(),

@@ -17,11 +17,11 @@ const mockLogger = {
   error: jest.fn(),
 };
 
-jest.mock("../models/orderModel");
-jest.mock("../models/storeModel");
-jest.mock("../service/serviceOptionHoldService");
-jest.mock("../service/productService");
-jest.mock("../utils/withTransaction");
+jest.mock("../../models/orderModel");
+jest.mock("../../models/storeModel");
+jest.mock("../../service/serviceOptionHoldService");
+jest.mock("../../service/productService");
+jest.mock("../../utils/withTransaction");
 
 const mockClient = {};
 

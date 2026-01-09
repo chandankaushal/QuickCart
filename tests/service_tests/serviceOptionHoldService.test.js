@@ -4,7 +4,7 @@ const {
   isServiceOptionHoldValid,
   markServiceOptionHoldTaken,
 } = require("../../service/serviceOptionHoldService");
-jest.mock("../models/serviceOptionsHoldModel");
+jest.mock("../../models/serviceOptionsHoldModel");
 
 const mockLogger = {
   info: jest.fn(),

@@ -7,7 +7,7 @@ const {
   storeRefreshTokenInDB,
 } = require("../../utils/auth");
 
-jest.mock("../models/jwtTokenModel");
+jest.mock("../../models/jwtTokenModel");
 
 // Set up environment variables for tests
 process.env.JWT_SECRET = "test-jwt-secret";
