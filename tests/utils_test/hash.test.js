@@ -1,4 +1,4 @@
-const { hashPassword, comparePassword } = require("../utils/hash");
+const { hashPassword, comparePassword } = require("../../utils/hash");
 const bcrypt = require("bcrypt");
 
 describe("Hash Utils", () => {

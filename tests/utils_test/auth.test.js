@@ -1,13 +1,13 @@
 const jwt = require("jsonwebtoken");
-const jwt_token = require("../models/jwtTokenModel");
+const jwt_token = require("../../models/jwtTokenModel");
 const {
   getToken,
   refreshToken,
   storeTokenInDB,
   storeRefreshTokenInDB,
-} = require("../utils/auth");
+} = require("../../utils/auth");
 
-jest.mock("../models/jwtTokenModel");
+jest.mock("../../models/jwtTokenModel");
 
 // Set up environment variables for tests
 process.env.JWT_SECRET = "test-jwt-secret";

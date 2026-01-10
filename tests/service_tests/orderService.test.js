@@ -1,27 +1,27 @@
-const { Stores } = require("../models/storeModel");
+const { Stores } = require("../../models/storeModel");
 
 const {
   isServiceOptionHoldValid,
   markServiceOptionHoldTaken,
-} = require("../service/serviceOptionHoldService");
-const Order = require("../models/orderModel");
+} = require("../../service/serviceOptionHoldService");
+const Order = require("../../models/orderModel");
 const {
   checkProductStock,
   updateQtyinDb,
-} = require("../service/productService");
-const { create_pickup_order } = require("../service/orderService");
-const withTransaction = require("../utils/withTransaction");
+} = require("../../service/productService");
+const { create_pickup_order } = require("../../service/orderService");
+const withTransaction = require("../../utils/withTransaction");
 
 const mockLogger = {
   info: jest.fn(),
   error: jest.fn(),
 };
 
-jest.mock("../models/orderModel");
-jest.mock("../models/storeModel");
-jest.mock("../service/serviceOptionHoldService");
-jest.mock("../service/productService");
-jest.mock("../utils/withTransaction");
+jest.mock("../../models/orderModel");
+jest.mock("../../models/storeModel");
+jest.mock("../../service/serviceOptionHoldService");
+jest.mock("../../service/productService");
+jest.mock("../../utils/withTransaction");
 
 const mockClient = {};
 

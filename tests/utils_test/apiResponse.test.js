@@ -2,7 +2,7 @@ const {
   sendError,
   sendSuccess,
   setRefreshTokenCookie,
-} = require("../utils/apiResponse");
+} = require("../../utils/apiResponse");
 
 describe("API Response Utils", () => {
   let mockRes;

@@ -1,8 +1,8 @@
-const pool = require("../db");
-const Product = require("../models/productModel");
+const pool = require("../../db");
+const Product = require("../../models/productModel");
 
 // Mock the database pool
-jest.mock("../db");
+jest.mock("../../db");
 
 describe("Product Model", () => {
   beforeEach(() => {

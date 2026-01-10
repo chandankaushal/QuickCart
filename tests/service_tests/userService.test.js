@@ -3,24 +3,24 @@ const {
   registerUser,
   getUserByEmail,
   new_access_token_from_refresh_token,
-} = require("../service/userService");
-const User = require("../models/userModel");
-const { hashPassword, comparePassword } = require("../utils/hash");
+} = require("../../service/userService");
+const User = require("../../models/userModel");
+const { hashPassword, comparePassword } = require("../../utils/hash");
 const {
   getToken,
   storeTokenInDB,
   refreshToken,
   storeRefreshTokenInDB,
-} = require("../utils/auth");
-const jwt_token = require("../models/jwtTokenModel");
-const { validateEmail } = require("../utils/validEmail");
+} = require("../../utils/auth");
+const jwt_token = require("../../models/jwtTokenModel");
+const { validateEmail } = require("../../utils/validEmail");
 
 //Need this to Mock the functions
-jest.mock("../models/userModel");
-jest.mock("../utils/hash");
-jest.mock("../utils/auth");
-jest.mock("../utils/validEmail");
-jest.mock("../models/jwtTokenModel");
+jest.mock("../../models/userModel");
+jest.mock("../../utils/hash");
+jest.mock("../../utils/auth");
+jest.mock("../../utils/validEmail");
+jest.mock("../../models/jwtTokenModel");
 
 const mockLogger = {
   info: jest.fn(),

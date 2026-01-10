@@ -1,15 +1,15 @@
 const {
   checkProductStock,
   updateQtyinDb,
-} = require("../service/productService");
-const Product = require("../models/productModel");
+} = require("../../service/productService");
+const Product = require("../../models/productModel");
 
 const mockLogger = {
   info: jest.fn(),
   error: jest.fn(),
 };
 
-jest.mock("../models/productModel");
+jest.mock("../../models/productModel");
 
 describe("Product Service", () => {
   beforeEach(() => {

@@ -1,4 +1,4 @@
-const { GetupcFromItems } = require("../utils/items");
+const { GetupcFromItems } = require("../../utils/items");
 
 describe("items utils", () => {
   describe("GetupcFromItems", () => {
