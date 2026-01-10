@@ -1,3 +1,4 @@
+// We can have a real db connection here once the DB is deployed on cloud
 jest.mock("../../db", () => ({
   connect: jest.fn().mockResolvedValue(),
   query: jest
