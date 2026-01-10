@@ -17,11 +17,13 @@ const errorHandler = require("./middleware/error.js");
 const logger = require("./utils/logger");
 const pinoMiddleware = require("./middleware/pinoLogger.js");
 const cookieParser = require("cookie-parser");
+const limiter = require("./utils/rate-limit.js");
 
 const app = express();
 app.use(express.json());
 app.use(pinoMiddleware);
 app.use(cookieParser());
+app.use(limiter);
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Server is running ✅" });
