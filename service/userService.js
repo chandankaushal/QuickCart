@@ -91,7 +91,7 @@ async function registerUser(name, email, password, log = logger) {
     const uuid = crypto.randomUUID();
     let hashedPassword = await hashPassword(password);
     await User.register(uuid, name, email, hashedPassword, client);
-    log.info({ user_id: uuid }, "User created Successfully");
+    log.info({ user_id: uuid }, "User created in the DB");
     const userObj = {
       id: uuid,
       name: name,
@@ -100,9 +100,9 @@ async function registerUser(name, email, password, log = logger) {
     //create a sign-up JWT token and store it in DB, which we can then verify when user verifies email.
     const signUpJwtToken = signUpToken(userObj);
     // console.log(`SIGNUP:${signUpJwtToken}`);
-    // console.log("signupTokenCreated");
+    log.info("SignUp Token created");
     let { token_id } = await storeSignUpTokenInDB(signUpJwtToken, log, client);
-    log.info("Token Stored in DB");
+    log.info("Signup Token Stored in DB");
 
     return token_id;
   });

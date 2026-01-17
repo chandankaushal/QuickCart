@@ -25,7 +25,12 @@ async function signupUser(req, res) {
   //Generate a Sign-UP Token with ID
   // Put it in a DB
   // It will then be verified when user clicks on the link.
-  sendSuccess(res, null, response, 200);
+  sendSuccess(
+    res,
+    "User Registered Successfully. Please verify your email.",
+    { token_id: response },
+    200,
+  );
 }
 
 async function deleteUser(req, res) {
