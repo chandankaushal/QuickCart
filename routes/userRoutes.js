@@ -7,6 +7,7 @@ const {
   updateUser,
   login,
   refreshToken,
+  emailVerify,
 } = require("../controllers/userController");
 
 const {
@@ -41,5 +42,6 @@ router.post(
   wrapAsync(checkValidRefreshToken),
   wrapAsync(refreshToken)
 );
+router.get("/email-verify", emailVerify);
 
 module.exports = router;

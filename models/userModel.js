@@ -16,11 +16,17 @@ const User = {
     return response;
   },
 
-  async register(uuid, name, email, hashedPassword) {
+  async register(uuid, name, email, hashedPassword, client = null) {
     const sql = `INSERT INTO ${user_table} (id,name,email,password) VALUES ($1,$2,$3,$4)`;
     const values = [uuid, name, email, hashedPassword];
-    let response = await pool.query(sql, values);
-    return response;
+    if (client) {
+      // console.log("using client");
+      let response = await client.query(sql, values);
+      return response;
+    } else {
+      let response = await pool.query(sql, values);
+      return response;
+    }
   },
 
   async deleteUser(email) {
