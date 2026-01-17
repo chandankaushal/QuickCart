@@ -16,7 +16,21 @@ function getToken(user) {
     {
       jwtid: crypto.randomUUID(),
       expiresIn: process.env.JWT_EXPIRES_IN,
-    }
+    },
+  );
+}
+function signUpToken(user) {
+  return jwt.sign(
+    {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    },
+    process.env.JWT_SIGN_UP_SECRET,
+    {
+      jwtid: crypto.randomUUID(),
+      expiresIn: process.env.JWT_SIGN_UP_EXPIRES_IN,
+    },
   );
 }
 function refreshToken(user) {
@@ -30,7 +44,7 @@ function refreshToken(user) {
     {
       jwtid: crypto.randomUUID(),
       expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
-    }
+    },
   );
 }
 
@@ -63,16 +77,43 @@ async function storeRefreshTokenInDB(token, log = logger) {
     .catch((error) => {
       log.warn(
         { error, token_id },
-        "There was an error with storing token in DB"
+        "There was an error with storing token in DB",
       );
       throw new ExpressError(
         "There was an error with your request. Please try again later",
         500,
-        "INTERNAL_SERVER_ERROR"
+        "INTERNAL_SERVER_ERROR",
       );
     });
 
   return true;
+}
+async function storeSignUpTokenInDB(token, log = logger, client = null) {
+  // console.log("Token Decoded");
+  const decoded = jwt.decode(token);
+  if (!decoded || !decoded.id || !decoded.jti) {
+    throw new Error("Invalid token: missing required fields");
+  }
+  const user_id = decoded.id;
+  const token_id = decoded.jti;
+  const issue_time = decoded.iat ? new Date(decoded.iat * 1000) : null;
+  const expires_at = decoded.exp ? new Date(decoded.exp * 1000) : null;
+
+  await jwt_token
+    .addSignupToDB(token_id, user_id, issue_time, expires_at, client)
+    .catch((error) => {
+      log.warn(
+        { error, token_id },
+        "There was an error with storing token in DB",
+      );
+      throw new ExpressError(
+        "There was an error with your request. Please try again later",
+        500,
+        "INTERNAL_SERVER_ERROR",
+      );
+    });
+
+  return { token_id: token_id, result: true };
 }
 
 module.exports = {
@@ -80,4 +121,6 @@ module.exports = {
   storeTokenInDB,
   refreshToken,
   storeRefreshTokenInDB,
+  signUpToken,
+  storeSignUpTokenInDB,
 };

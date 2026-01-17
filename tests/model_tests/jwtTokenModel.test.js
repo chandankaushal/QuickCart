@@ -21,7 +21,8 @@ describe("JWT Token Model", () => {
         "token-123",
         "user-456",
         issueTime,
-        expiresAt
+        expiresAt,
+        "access_token"
       );
 
       expect(pool.query).toHaveBeenCalledWith(
@@ -35,7 +36,7 @@ describe("JWT Token Model", () => {
       pool.query.mockRejectedValue(new Error("duplicate key value"));
 
       await expect(
-        jwt_token.addToDB("token-123", "user-456", new Date(), new Date())
+        jwt_token.addToDB("token-123", "user-456", new Date(), new Date(), "access_token")
       ).rejects.toThrow("duplicate key value");
     });
   });

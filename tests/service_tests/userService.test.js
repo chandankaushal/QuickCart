@@ -11,9 +11,13 @@ const {
   storeTokenInDB,
   refreshToken,
   storeRefreshTokenInDB,
+  storeSignUpTokenInDB,
+  signUpToken,
 } = require("../../utils/auth");
 const jwt_token = require("../../models/jwtTokenModel");
 const { validateEmail } = require("../../utils/validEmail");
+const withTransaction = require("../../utils/withTransaction");
+const { any } = require("joi");
 
 //Need this to Mock the functions
 jest.mock("../../models/userModel");
@@ -21,12 +25,15 @@ jest.mock("../../utils/hash");
 jest.mock("../../utils/auth");
 jest.mock("../../utils/validEmail");
 jest.mock("../../models/jwtTokenModel");
+jest.mock("../../utils/withTransaction", () => jest.fn());
 
 const mockLogger = {
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
 };
+const mockClient = {};
+signUpToken.mockImplementation(() => "dummyToken");
 
 describe("loginUser function", () => {
   beforeEach(() => {
@@ -60,7 +67,7 @@ describe("loginUser function", () => {
     expect(User.getPasswordByEmail).toHaveBeenCalledWith(testEmail);
     expect(comparePassword).toHaveBeenCalledWith(
       testPassword,
-      "hashedPassword"
+      "hashedPassword",
     );
     expect(getToken).toHaveBeenCalledWith({
       id: "user-123",
@@ -81,7 +88,7 @@ describe("loginUser function", () => {
     User.getPasswordByEmail.mockResolvedValue(fakeDbResponse);
 
     await expect(
-      loginUser(testEmail, testPassword, mockLogger)
+      loginUser(testEmail, testPassword, mockLogger),
     ).rejects.toThrow("User with this email does not exist");
   });
   it("should throw an error when the password is not correct", async () => {
@@ -103,7 +110,7 @@ describe("loginUser function", () => {
     comparePassword.mockResolvedValue(false);
 
     await expect(
-      loginUser(testEmail, testPassword, mockLogger)
+      loginUser(testEmail, testPassword, mockLogger),
     ).rejects.toThrow("Please check your credentials");
   });
 });
@@ -111,13 +118,20 @@ describe("loginUser function", () => {
 describe("registerUser function", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    withTransaction.mockImplementation(async (callback) => {
+      return await callback(mockClient);
+    });
   });
 
   it("should register a new user successfully", async () => {
     let testName = "testUser";
     let testEmail = "test@test.com";
     let testPassword = "testPassword";
-
+    let userObj = {
+      id: expect.any(String),
+      name: testName,
+      role: "user",
+    };
     hashPassword.mockResolvedValue("hashedPassword");
 
     const fakeDbResponse = {
@@ -125,22 +139,25 @@ describe("registerUser function", () => {
     };
 
     User.register.mockResolvedValue(fakeDbResponse);
-
+    storeSignUpTokenInDB.mockResolvedValue({ token_id: "testToken" });
     let result = await registerUser(
       testName,
       testEmail,
       testPassword,
-      mockLogger
+      mockLogger,
+      mockClient,
     );
 
-    expect(result).toEqual({ rowCount: 1 });
+    expect(result).toEqual("testToken");
     expect(hashPassword).toHaveBeenCalledWith(testPassword);
     expect(User.register).toHaveBeenCalledWith(
       expect.any(String),
       testName,
       testEmail,
-      "hashedPassword"
+      "hashedPassword",
+      mockClient,
     );
+    expect(signUpToken).toHaveBeenCalledWith(userObj);
   });
 });
 
@@ -176,7 +193,7 @@ describe("getUserByEmail", () => {
 
   it("should throw error when user_id is missing", async () => {
     await expect(
-      getUserByEmail("test@test.com", null, mockLogger)
+      getUserByEmail("test@test.com", null, mockLogger),
     ).rejects.toThrow("No User ID");
   });
 
@@ -186,7 +203,7 @@ describe("getUserByEmail", () => {
 
     validateEmail.mockReturnValue(false);
     await expect(
-      getUserByEmail(testEmail, testUserId, mockLogger)
+      getUserByEmail(testEmail, testUserId, mockLogger),
     ).rejects.toThrow("The provided email is not valid");
   });
 
@@ -208,9 +225,9 @@ describe("getUserByEmail", () => {
     User.getByEmail.mockResolvedValue(fakeDbResponse);
 
     await expect(
-      getUserByEmail(testEmail, testUserId, mockLogger)
+      getUserByEmail(testEmail, testUserId, mockLogger),
     ).rejects.toThrow(
-      "The requested user does not exist or you do not have the permission to access them"
+      "The requested user does not exist or you do not have the permission to access them",
     );
     expect(validateEmail).toHaveBeenCalledWith(testEmail);
     expect(User.getByEmail).toHaveBeenCalledWith(testEmail);
@@ -246,7 +263,7 @@ describe("getUserByEmail", () => {
       let result = await new_access_token_from_refresh_token(
         jti,
         userObj,
-        mockLogger
+        mockLogger,
       );
 
       expect(result).toEqual(finalResult);
@@ -272,14 +289,14 @@ describe("getUserByEmail", () => {
       storeTokenInDB.mockResolvedValue(true);
       storeRefreshTokenInDB.mockRejectedValue(
         new Error(
-          "There was an error with your request. Please try again later"
-        )
+          "There was an error with your request. Please try again later",
+        ),
       );
 
       await expect(
-        new_access_token_from_refresh_token(jti, userObj, mockLogger)
+        new_access_token_from_refresh_token(jti, userObj, mockLogger),
       ).rejects.toThrow(
-        "There was an error with your request. Please try again later"
+        "There was an error with your request. Please try again later",
       );
     });
   });
@@ -308,7 +325,7 @@ describe("getUserByEmail", () => {
     let result = await new_access_token_from_refresh_token(
       jti,
       userObj,
-      mockLogger
+      mockLogger,
     );
     expect(result).toEqual(finalResult);
     expect(mockLogger.warn).toHaveBeenCalled();
@@ -321,10 +338,10 @@ describe("getUserByEmail", () => {
       role: "fakeRole",
     };
     jwt_token.deleteRefreshTokenFromDb.mockRejectedValue(
-      new Error("DB Failure")
+      new Error("DB Failure"),
     );
     await expect(
-      new_access_token_from_refresh_token(jti, userObj, mockLogger)
+      new_access_token_from_refresh_token(jti, userObj, mockLogger),
     ).rejects.toThrow("DB Failure");
     expect(getToken).not.toHaveBeenCalled();
     expect(refreshToken).not.toHaveBeenCalled();
@@ -353,7 +370,7 @@ describe("getUserByEmail", () => {
     let result = await new_access_token_from_refresh_token(
       jti,
       userObj,
-      mockLogger
+      mockLogger,
     );
 
     expect(result).toEqual({

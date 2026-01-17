@@ -8,9 +8,12 @@ const {
   storeTokenInDB,
   refreshToken,
   storeRefreshTokenInDB,
+  signUpToken,
+  storeSignUpTokenInDB,
 } = require("../utils/auth");
 const crypto = require("crypto");
 const logger = require("../utils/logger");
+const withTransaction = require("../utils/withTransaction");
 
 async function getUserByEmail(email, user_id, log = logger) {
   if (!user_id) {
@@ -28,14 +31,14 @@ async function getUserByEmail(email, user_id, log = logger) {
       throw new ExpressError(
         "The requested user does not exist or you do not have the permission to access them",
         400,
-        "NO_USER_FOUND"
+        "NO_USER_FOUND",
       );
     }
   } else {
     throw new ExpressError(
       "The provided email is not valid",
       400,
-      "INVALID_EMAIL"
+      "INVALID_EMAIL",
     );
   }
 }
@@ -47,7 +50,7 @@ async function loginUser(email, password, log = logger) {
     throw new ExpressError(
       "User with this email does not exist",
       400,
-      "NO_USER_EXISTS"
+      "NO_USER_EXISTS",
     );
   }
   log.info("Comparing Passwords");
@@ -66,11 +69,11 @@ async function loginUser(email, password, log = logger) {
     // NO await in storing token because we dont want to block.
     log.info("Storing token in DB");
     storeTokenInDB(access_token).catch((err) =>
-      log.warn(`${err},"Failed to store token in DB`)
+      log.warn(`${err},"Failed to store token in DB`),
     );
     // console.log("Storing Refresh Token in DB");
     storeRefreshTokenInDB(refresh_token).catch((err) =>
-      log.warn(`${err},"Failed to store refresh token in DB`)
+      log.warn(`${err},"Failed to store refresh token in DB`),
     );
 
     return { access_token: access_token, refresh_token: refresh_token };
@@ -78,17 +81,32 @@ async function loginUser(email, password, log = logger) {
     throw new ExpressError(
       "Please check your credentials",
       401,
-      "UNAUTHORIZED"
+      "UNAUTHORIZED",
     );
   }
 }
 
 async function registerUser(name, email, password, log = logger) {
-  const uuid = crypto.randomUUID();
-  log.info("Hashing Password");
-  let hashedPassword = await hashPassword(password);
-  let response = await User.register(uuid, name, email, hashedPassword);
-  return response;
+  const withTransactionResponse = await withTransaction(async (client) => {
+    const uuid = crypto.randomUUID();
+    let hashedPassword = await hashPassword(password);
+    await User.register(uuid, name, email, hashedPassword, client);
+    log.info({ user_id: uuid }, "User created in the DB");
+    const userObj = {
+      id: uuid,
+      name: name,
+      role: "user",
+    };
+    //create a sign-up JWT token and store it in DB, which we can then verify when user verifies email.
+    const signUpJwtToken = signUpToken(userObj);
+    // console.log(`SIGNUP:${signUpJwtToken}`);
+    log.info("SignUp Token created");
+    let { token_id } = await storeSignUpTokenInDB(signUpJwtToken, log, client);
+    log.info("Signup Token Stored in DB");
+
+    return token_id;
+  });
+  return withTransactionResponse;
 }
 async function new_access_token_from_refresh_token(jti, userObj, log = logger) {
   const remove = await jwt_token.deleteRefreshTokenFromDb(jti); //Removing Refresh Token from DB to avoid using this again
@@ -99,7 +117,7 @@ async function new_access_token_from_refresh_token(jti, userObj, log = logger) {
   let refresh_token = refreshToken(userObj); // New Refresh Token
   log.info("Storing  new access token in DB");
   storeTokenInDB(access_token).catch((err) =>
-    log.warn(`${err},"Failed to store token in DB`)
+    log.warn(`${err},"Failed to store token in DB`),
   );
   log.info("Storing new refresh token in db");
   // Await here because storing DB is important for Refresh Token
