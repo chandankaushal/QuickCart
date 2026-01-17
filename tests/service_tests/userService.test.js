@@ -43,6 +43,13 @@ describe("loginUser function", () => {
   it("should return access token when login is successful", async () => {
     const testEmail = "john@example.com";
     const testPassword = "test123";
+    const isActiveResponse = {
+      rows: [
+        {
+          verified: true,
+        },
+      ],
+    };
 
     const fakeDbResponse = {
       rowCount: 1,
@@ -58,6 +65,7 @@ describe("loginUser function", () => {
 
     User.getPasswordByEmail.mockResolvedValue(fakeDbResponse);
     comparePassword.mockResolvedValue(true);
+    User.isUserActive.mockResolvedValue(isActiveResponse);
     getToken.mockReturnValue("fake.jwt.token");
     storeTokenInDB.mockResolvedValue(true);
     storeRefreshTokenInDB.mockResolvedValue(true);
