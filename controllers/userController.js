@@ -22,7 +22,15 @@ async function getUsers(req, res) {
 async function signupUser(req, res) {
   let { name, email, password } = req.body;
   let response = await registerUser(name, email, password, req.log);
-  sendSuccess(res, null, `User successfully created`, 200);
+  //Generate a Sign-UP Token with ID
+  // Put it in a DB
+  // It will then be verified when user clicks on the link.
+  sendSuccess(
+    res,
+    "User Registered Successfully. Please verify your email.",
+    { token_id: response },
+    200,
+  );
 }
 
 async function deleteUser(req, res) {
@@ -68,11 +76,15 @@ async function refreshToken(req, res) {
   let new_access_token = await new_access_token_from_refresh_token(
     jti,
     userObj,
-    req.log
+    req.log,
   );
   //Adding new refresh token to the cookie
   setRefreshTokenCookie(res, new_access_token.refresh_token);
   sendSuccess(res, null, new_access_token.access_token, 200);
+}
+async function emailVerify(req, res) {
+  let { token_id } = req.params;
+  // if token exists and is valid then we set the verify flag in users table to true.
 }
 
 module.exports = {
@@ -82,4 +94,5 @@ module.exports = {
   updateUser,
   login,
   refreshToken,
+  emailVerify,
 };
