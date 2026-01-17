@@ -15,7 +15,12 @@ const User = {
     let response = await pool.query(sql, values);
     return response;
   },
-
+  async isUserActive(email) {
+    let sql = `SELECT verified FROM ${user_table} WHERE email = $1`;
+    let values = [email];
+    let response = await pool.query(sql, values);
+    return response;
+  },
   async register(uuid, name, email, hashedPassword, client = null) {
     const sql = `INSERT INTO ${user_table} (id,name,email,password) VALUES ($1,$2,$3,$4)`;
     const values = [uuid, name, email, hashedPassword];
@@ -45,6 +50,19 @@ const User = {
     let values = [email];
     const response = await pool.query(sql, values);
     return response;
+  },
+  async verifyUser(id, client = null) {
+    if (client) {
+      let sql = `UPDATE ${user_table} SET verified = true WHERE id = $1 AND verified = false`;
+      let values = [id];
+      let response = await client.query(sql, values);
+      return response;
+    } else {
+      let sql = `UPDATE ${user_table} SET verified = true WHERE id = $1 AND verified = false`;
+      let values = [id];
+      let response = await pool.query(sql, values);
+      return response;
+    }
   },
 };
 
