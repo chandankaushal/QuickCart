@@ -4,6 +4,7 @@ const {
   loginUser,
   registerUser,
   new_access_token_from_refresh_token,
+  email_verify_token,
 } = require("../service/userService");
 
 const { sendSuccess, setRefreshTokenCookie } = require("../utils/apiResponse");
@@ -83,7 +84,12 @@ async function refreshToken(req, res) {
   sendSuccess(res, null, new_access_token.access_token, 200);
 }
 async function emailVerify(req, res) {
-  let { token_id } = req.params;
+  let { token_id } = req.query;
+  // console.log(token_id);
+  let response = await email_verify_token(token_id, req.log);
+  if (response) {
+    sendSuccess(res, "Token is verified", null, 200);
+  }
   // if token exists and is valid then we set the verify flag in users table to true.
 }
 
