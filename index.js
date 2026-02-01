@@ -1,7 +1,7 @@
 // server.js
 require("dd-trace").init({
-  service: "quickcart", // or any name you want to see in APM
-  env: "dev", // dev / staging / prod
+  service: "quickcart", // service name
+  env: "dev", // environment
   logInjection: true, // puts trace IDs into logs
   runtimeMetrics: true, // optional, extra metrics
 });
