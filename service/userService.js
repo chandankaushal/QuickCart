@@ -14,6 +14,7 @@ const {
 const crypto = require("crypto");
 const logger = require("../utils/logger");
 const withTransaction = require("../utils/withTransaction");
+const sendEmail = require("../utils/ses_email");
 
 async function getUserByEmail(email, user_id, log = logger) {
   if (!user_id) {
@@ -112,6 +113,14 @@ async function registerUser(name, email, password, log = logger) {
     log.info("SignUp Token created");
     let { token_id } = await storeSignUpTokenInDB(signUpJwtToken, log, client);
     log.info("Signup Token Stored in DB");
+    // Body: Please click on the link to verify your account http://localhost:2000/users/email-verify?token_id=${token_id}
+    let info = await sendEmail({
+      to: "chandankaushalwork@gmail.com",
+      subject: "QuickCart-Account-Verify",
+      body: `Please click on the link to verify your account http://localhost:2000/users/email-verify?token_id=${token_id}`,
+    });
+
+    log.info({ user_id: userObj.id, email: email }, "Email Sent to the user");
 
     return token_id;
   });

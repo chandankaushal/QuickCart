@@ -1,3 +1,6 @@
+jest.mock("../../utils/ses_email", () =>
+  jest.fn().mockResolvedValue({ info: "testObject" }),
+);
 const {
   loginUser,
   registerUser,
@@ -18,6 +21,7 @@ const jwt_token = require("../../models/jwtTokenModel");
 const { validateEmail } = require("../../utils/validEmail");
 const withTransaction = require("../../utils/withTransaction");
 const { any } = require("joi");
+const sendEmail = require("../../utils/ses_email");
 
 //Need this to Mock the functions
 jest.mock("../../models/userModel");
@@ -166,6 +170,7 @@ describe("registerUser function", () => {
       mockClient,
     );
     expect(signUpToken).toHaveBeenCalledWith(userObj);
+    expect(sendEmail).toHaveBeenCalled();
   });
 });
 
