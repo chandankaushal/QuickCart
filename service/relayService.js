@@ -1,5 +1,7 @@
+const sendWebhook = require("../utils/sendWebhook");
+
 async function createOmsOrder(order) {
-  await sendWebhook(order, "ORDER_CREATED");
+  return await sendWebhook(order, "ORDER_CREATED");
 }
 // TO-DO Transition
 // async function updateOmsOrder(order, update_type) {

@@ -40,7 +40,7 @@ describe("Product Service", () => {
       ]);
       expect(Product.getProductByUpc).toHaveBeenCalledWith(
         [123, 456],
-        store_id
+        store_id,
       );
     });
 
@@ -51,7 +51,7 @@ describe("Product Service", () => {
       Product.getProductByUpc.mockResolvedValue({ rows: [] });
 
       await expect(
-        checkProductStock(items, store_id, mockLogger)
+        checkProductStock(items, store_id, mockLogger),
       ).rejects.toThrow("None of the items you requested are available");
 
       expect(Product.getProductByUpc).toHaveBeenCalledWith([123], store_id);
@@ -155,11 +155,11 @@ describe("Product Service", () => {
 
       expect(mockLogger.info).toHaveBeenCalledWith(
         { items: { requested_items: 1 } },
-        "Looking up for Requested Items"
+        "Looking up for Requested Items",
       );
       expect(mockLogger.info).toHaveBeenCalledWith(
         { items: { found_items: 1 } },
-        "Found Items"
+        "Found Items",
       );
     });
 
@@ -184,7 +184,7 @@ describe("Product Service", () => {
             },
           ],
         },
-        "Out of Stock items"
+        "Out of Stock items",
       );
     });
   });
@@ -196,15 +196,18 @@ describe("Product Service", () => {
         { upc: 456, qty: 1 },
       ];
       const store_id = 1;
+      const mockClient = {};
 
       Product.batchUpdateProductQty.mockResolvedValue({ rowCount: 2 });
 
-      const result = await updateQtyinDb(items, store_id);
+      const result = await updateQtyinDb(items, store_id, mockClient);
 
       expect(result).toBe(2);
+      console.log(items);
       expect(Product.batchUpdateProductQty).toHaveBeenCalledWith(
         items,
-        store_id
+        store_id,
+        mockClient,
       );
     });
 
@@ -215,7 +218,7 @@ describe("Product Service", () => {
       Product.batchUpdateProductQty.mockResolvedValue({ rowCount: 0 });
 
       await expect(updateQtyinDb(items, store_id)).rejects.toThrow(
-        "Nothing was updated in the DB"
+        "Nothing was updated in the DB",
       );
     });
 
@@ -235,11 +238,11 @@ describe("Product Service", () => {
       const store_id = 1;
 
       Product.batchUpdateProductQty.mockRejectedValue(
-        new Error("Database connection failed")
+        new Error("Database connection failed"),
       );
 
       await expect(updateQtyinDb(items, store_id)).rejects.toThrow(
-        "Database connection failed"
+        "Database connection failed",
       );
     });
 
@@ -274,7 +277,7 @@ describe("Product Service", () => {
         expect(error.code).toBe("ITEM_NOT_FOUND");
         expect(error.statusCode).toBe(400);
         expect(error.message).toBe(
-          "None of the items you requested are available"
+          "None of the items you requested are available",
         );
       }
     });

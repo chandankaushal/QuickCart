@@ -17,12 +17,14 @@ const mockLogger = {
   error: jest.fn(),
 };
 
+const createOmsOrder = require("../../service/relayService");
+
 jest.mock("../../models/orderModel");
 jest.mock("../../models/storeModel");
 jest.mock("../../service/serviceOptionHoldService");
 jest.mock("../../service/productService");
 jest.mock("../../utils/withTransaction");
-
+jest.mock("../../service/relayService");
 const mockClient = {};
 
 describe("Create Order Service", () => {
@@ -48,6 +50,10 @@ describe("Create Order Service", () => {
         requested: 1,
       },
       problems: false,
+    };
+    let createOmsOrderResponse = {
+      status: 200,
+      message: "success",
     };
 
     let getStoreByIdDBresponse = {
@@ -86,14 +92,15 @@ describe("Create Order Service", () => {
 
     Stores.getStoreById.mockResolvedValue(getStoreByIdDBresponse);
     isServiceOptionHoldValid.mockResolvedValue(
-      isServiceOptionHoldValidResponse
+      isServiceOptionHoldValidResponse,
     );
     checkProductStock.mockResolvedValue(checkProductStockResponse);
     markServiceOptionHoldTaken.mockResolvedValue(
-      markServiceOptionHoldTakenResponse
+      markServiceOptionHoldTakenResponse,
     );
     updateQtyinDb.mockResolvedValue(updateQtyinDbResponse);
     Order.pickupOrder.mockResolvedValue(pickupOrderDBresponse);
+    createOmsOrder.mockResolvedValue(createOmsOrderResponse);
 
     let result = await create_pickup_order(
       fakeOrderId,
@@ -101,8 +108,16 @@ describe("Create Order Service", () => {
       service_option_hold_id,
       items,
       user_id,
-      mockLogger
+      mockLogger,
     );
+    let orderObj = {
+      id: fakeOrderId,
+      service_type: "pickup",
+      user_id: user_id,
+      state: "brand_new",
+      service_option_hold_id: service_option_hold_id,
+      created_at: new Date().toISOString(),
+    };
     // console.log(result);
     expect(result).toEqual({
       rowCount: 1,
@@ -114,19 +129,20 @@ describe("Create Order Service", () => {
       store_id,
       service_option_hold_id,
       user_id,
-      mockClient
+      mockClient,
     );
 
     expect(updateQtyinDb).toHaveBeenCalledWith(items, store_id, mockClient);
     expect(markServiceOptionHoldTaken).toHaveBeenCalledWith(
       service_option_hold_id,
-      mockClient
+      mockClient,
     );
     expect(checkProductStock).toHaveBeenCalledWith(items, store_id);
     expect(isServiceOptionHoldValid).toHaveBeenCalledWith(
-      service_option_hold_id
+      service_option_hold_id,
     );
     expect(Stores.getStoreById).toHaveBeenCalledWith(store_id);
+    expect(createOmsOrder).toHaveBeenCalledWith(orderObj);
   });
   it("should return an error when invalid store_id is passed", async () => {
     let fakeOrderId = "abc123";
@@ -143,8 +159,8 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
-        mockLogger
-      )
+        mockLogger,
+      ),
     ).rejects.toThrow("Invalid store id");
 
     expect(checkProductStock).not.toHaveBeenCalled();
@@ -168,8 +184,8 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
-        mockLogger
-      )
+        mockLogger,
+      ),
     ).rejects.toThrow("Invalid store id");
 
     expect(checkProductStock).not.toHaveBeenCalled();
@@ -195,8 +211,8 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
-        mockLogger
-      )
+        mockLogger,
+      ),
     ).rejects.toThrow("No Stores found for this location code");
 
     expect(Stores.getStoreById).toHaveBeenCalledWith(store_id);
@@ -223,13 +239,13 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
-        mockLogger
-      )
+        mockLogger,
+      ),
     ).rejects.toThrow("Hold has expired");
 
     expect(Stores.getStoreById).toHaveBeenCalledWith(store_id);
     expect(isServiceOptionHoldValid).toHaveBeenCalledWith(
-      service_option_hold_id
+      service_option_hold_id,
     );
     expect(checkProductStock).not.toHaveBeenCalled();
     expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
@@ -256,8 +272,8 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
-        mockLogger
-      )
+        mockLogger,
+      ),
     ).rejects.toThrow("Product not found");
 
     expect(checkProductStock).toHaveBeenCalledWith(items, store_id);
@@ -287,8 +303,8 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
-        mockLogger
-      )
+        mockLogger,
+      ),
     ).rejects.toThrow("UPC 123");
 
     expect(checkProductStock).toHaveBeenCalledWith(items, store_id);
@@ -309,7 +325,7 @@ describe("Create Order Service", () => {
     isServiceOptionHoldValid.mockResolvedValue(true);
     checkProductStock.mockResolvedValue({ problems: false, data: [] });
     markServiceOptionHoldTaken.mockRejectedValue(
-      new Error("Failed to mark hold as taken")
+      new Error("Failed to mark hold as taken"),
     );
 
     await expect(
@@ -319,13 +335,13 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
-        mockLogger
-      )
+        mockLogger,
+      ),
     ).rejects.toThrow("Failed to mark hold as taken");
 
     expect(markServiceOptionHoldTaken).toHaveBeenCalledWith(
       service_option_hold_id,
-      mockClient
+      mockClient,
     );
     expect(updateQtyinDb).not.toHaveBeenCalled();
     expect(Order.pickupOrder).not.toHaveBeenCalled();
@@ -351,8 +367,8 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
-        mockLogger
-      )
+        mockLogger,
+      ),
     ).rejects.toThrow("Failed to update stock");
 
     expect(updateQtyinDb).toHaveBeenCalledWith(items, store_id, mockClient);
@@ -380,8 +396,8 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
-        mockLogger
-      )
+        mockLogger,
+      ),
     ).rejects.toThrow("There were some issues creating your order");
 
     expect(Order.pickupOrder).toHaveBeenCalledWith(
@@ -389,7 +405,7 @@ describe("Create Order Service", () => {
       store_id,
       service_option_hold_id,
       user_id,
-      mockClient
+      mockClient,
     );
   });
 
@@ -418,7 +434,7 @@ describe("Create Order Service", () => {
       service_option_hold_id,
       items,
       user_id,
-      mockLogger
+      mockLogger,
     );
 
     expect(result.rowCount).toBe(1);
@@ -439,8 +455,8 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
-        mockLogger
-      )
+        mockLogger,
+      ),
     ).rejects.toThrow("Invalid store id");
 
     expect(Stores.getStoreById).not.toHaveBeenCalled();
@@ -460,8 +476,8 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
-        mockLogger
-      )
+        mockLogger,
+      ),
     ).rejects.toThrow("Invalid store id");
 
     expect(Stores.getStoreById).not.toHaveBeenCalled();
