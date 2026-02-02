@@ -1,0 +1,4 @@
+const ORDER_EVENT_TYPES = {
+  created: "ORDER_CREATED",
+  ORDER_UPDATED: "ORDER_UPDATED",
+};

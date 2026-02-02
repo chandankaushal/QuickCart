@@ -42,7 +42,7 @@ describe("Service Option Hold Tests", () => {
     ServiceOptionHold.holdById.mockResolvedValue(fakeDBResponse);
 
     await expect(isServiceOptionHoldValid(id, mockLogger)).rejects.toThrow(
-      "Service Options hold is expired"
+      "Service Options hold is expired",
     );
     expect(ServiceOptionHold.holdById).toHaveBeenCalledWith(id);
 
@@ -56,7 +56,7 @@ describe("Service Option Hold Tests", () => {
     ServiceOptionHold.holdById.mockResolvedValue(fakeDBResponse);
 
     await expect(isServiceOptionHoldValid(id, mockLogger)).rejects.toThrow(
-      "Service option hold not found"
+      "Service option hold not found",
     );
 
     expect(mockLogger.info).not.toHaveBeenCalled();
@@ -94,7 +94,7 @@ describe("Service Option Hold Tests", () => {
     ServiceOptionHold.holdById.mockRejectedValue(new Error("Database error"));
 
     await expect(isServiceOptionHoldValid(id, mockLogger)).rejects.toThrow(
-      "Database error"
+      "Database error",
     );
   });
 
@@ -113,7 +113,7 @@ describe("Service Option Hold Tests", () => {
     ServiceOptionHold.holdById.mockResolvedValue({});
 
     await expect(isServiceOptionHoldValid(null, mockLogger)).rejects.toThrow(
-      "Service option hold not found"
+      "Service option hold not found",
     );
   });
 });
@@ -127,10 +127,14 @@ describe("markServiceOptionHoldTaken", () => {
     let id = 1;
     const mockResponse = { rowCount: 1 };
     ServiceOptionHold.updateServiceOptionHold.mockResolvedValue(mockResponse);
+    const mockClient = {};
 
-    const result = await markServiceOptionHoldTaken(id);
+    const result = await markServiceOptionHoldTaken(id, mockClient);
     expect(result).toEqual(mockResponse);
-    expect(ServiceOptionHold.updateServiceOptionHold).toHaveBeenCalledWith(id);
+    expect(ServiceOptionHold.updateServiceOptionHold).toHaveBeenCalledWith(
+      id,
+      mockClient,
+    );
   });
 
   it("should throw ExpressError when hold is not found (rowCount 0)", async () => {
@@ -139,7 +143,7 @@ describe("markServiceOptionHoldTaken", () => {
     ServiceOptionHold.updateServiceOptionHold.mockResolvedValue(mockResponse);
 
     await expect(markServiceOptionHoldTaken(id)).rejects.toThrow(
-      "Service Option Hold not found. Please try again later"
+      "Service Option Hold not found. Please try again later",
     );
   });
 
@@ -159,11 +163,11 @@ describe("markServiceOptionHoldTaken", () => {
   it("should handle database errors gracefully", async () => {
     let id = 1;
     ServiceOptionHold.updateServiceOptionHold.mockRejectedValue(
-      new Error("Database connection failed")
+      new Error("Database connection failed"),
     );
 
     await expect(markServiceOptionHoldTaken(id)).rejects.toThrow(
-      "Database connection failed"
+      "Database connection failed",
     );
   });
 

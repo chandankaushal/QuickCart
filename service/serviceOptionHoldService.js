@@ -9,7 +9,7 @@ async function isServiceOptionHoldValid(id, log = logger) {
     throw new ExpressError(
       "Service option hold not found",
       404,
-      "SERVICE_OPTION_HOLD_NOT_FOUND"
+      "SERVICE_OPTION_HOLD_NOT_FOUND",
     );
   }
   log.info({ service_option_hold_id: id }, "Service Option Hold is valid");
@@ -21,20 +21,21 @@ async function isServiceOptionHoldValid(id, log = logger) {
     throw new ExpressError(
       "Service Options hold is expired",
       400,
-      "SERVICE_OPTIONS_HOLD_EXPIRED"
+      "SERVICE_OPTIONS_HOLD_EXPIRED",
     );
   }
   return true;
 }
 
 async function markServiceOptionHoldTaken(id, client = null, log = logger) {
-  let response = await ServiceOptionHold.updateServiceOptionHold(id);
+  console.log(client);
+  let response = await ServiceOptionHold.updateServiceOptionHold(id, client);
 
   if (response.rowCount === 0) {
     throw new ExpressError(
       "Service Option Hold not found. Please try again later",
       400,
-      "NOT_FOUND"
+      "NOT_FOUND",
     );
   }
   log.info({ service_option_hold_id: id }, "Marked Service Option Hold Taken");

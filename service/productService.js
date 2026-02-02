@@ -4,7 +4,7 @@ const logger = require("../utils/logger");
 async function checkProductStock(items, store_id, log = logger) {
   log.info(
     { items: { requested_items: items.length } },
-    `Looking up for Requested Items`
+    `Looking up for Requested Items`,
   );
   let upcs = items.map((item) => item.upc);
 
@@ -14,7 +14,7 @@ async function checkProductStock(items, store_id, log = logger) {
     throw new ExpressError(
       "None of the items you requested are available",
       400,
-      "ITEM_NOT_FOUND"
+      "ITEM_NOT_FOUND",
     );
   }
   log.info(
@@ -23,7 +23,7 @@ async function checkProductStock(items, store_id, log = logger) {
         found_items: availableItems.length,
       },
     },
-    `Found Items`
+    `Found Items`,
   );
   const dbMap = {};
 
@@ -69,7 +69,8 @@ async function checkProductStock(items, store_id, log = logger) {
 async function updateQtyinDb(items, store_id, client = null) {
   let { rowCount: products_updated } = await Product.batchUpdateProductQty(
     items,
-    store_id
+    store_id,
+    client,
   );
   if (products_updated === 0) {
     throw new ExpressError("Nothing was updated in the DB", 400, "NO_UPDATE");

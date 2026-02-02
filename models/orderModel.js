@@ -8,12 +8,19 @@ const Order = {
     store_id,
     service_option_hold_id,
     user_id,
-    client = null
+    client = null,
   ) {
     let sql = `INSERT INTO ${ORDERS_TABLE} (id,service_option_hold_id,user_id,store_id) VALUES ($1,$2,$3,$4)`;
     let params = [order_id, service_option_hold_id, user_id, store_id];
-    let response = await pool.query(sql, params);
-    return response;
+    if (client) {
+      // console.log("Creating Order with Client");
+      let response = await client.query(sql, params);
+      return response;
+    } else {
+      // console.log("Creating Order with Pool");
+      let response = await pool.query(sql, params);
+      return response;
+    }
   },
 };
 

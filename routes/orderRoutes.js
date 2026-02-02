@@ -10,7 +10,8 @@ router.post(
   "/pickup/create_order",
   validateBody(orderSchema),
   checkValidToken,
-  wrapAsync(createPickupOrder)
+  wrapAsync(createPickupOrder),
 );
+//router.post("/cancel_order") // Cancel Order
 
 module.exports = router;

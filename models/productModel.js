@@ -13,7 +13,7 @@ const Product = {
 
     return result;
   },
-  async batchUpdateProductQty(items, store_id) {
+  async batchUpdateProductQty(items, store_id, client = null) {
     // Batch update to avoid multiple update statements
     let preStatement = `UPDATE ${PRODUCT_TABLE} SET qty = qty - CASE upc `;
     let caseStatement = items
@@ -32,8 +32,20 @@ const Product = {
     params.push(upcs); // Pushing upcs for where clause in params
     params.push(store_id); // pushing store_id as param
 
-    let queryResult = await pool.query(finalStatement, params);
-    return queryResult;
+    if (client) {
+      // console.log("Updating Products with client");
+      let queryResult = await client.query(finalStatement, params);
+      return queryResult;
+    } else {
+      // console.log("Updating Products with Pool");
+      let queryResult = await pool.query(finalStatement, params);
+      return queryResult;
+    }
+
+    // let queryResult = client
+    //   ? await client.query(finalStatement, params)
+    //   : await pool.query(finalStatement, params);
+    // return queryResult;
   },
   async createNewProduct() {},
   async DeleteProduct() {},
