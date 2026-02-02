@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { createPickupOrder } = require("../controllers/orderController");
+const {
+  createPickupOrder,
+  transitionOrder,
+} = require("../controllers/orderController");
 const wrapAsync = require("../utils/wrapAsync");
 const { checkValidToken } = require("../middleware/auth");
 const { orderSchema } = require("../models/joiSchema");
@@ -13,5 +16,6 @@ router.post(
   wrapAsync(createPickupOrder),
 );
 //router.post("/cancel_order") // Cancel Order
+router.post("/transition_order", wrapAsync(transitionOrder));
 
 module.exports = router;
