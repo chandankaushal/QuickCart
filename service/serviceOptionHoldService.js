@@ -28,7 +28,6 @@ async function isServiceOptionHoldValid(id, log = logger) {
 }
 
 async function markServiceOptionHoldTaken(id, client = null, log = logger) {
-  console.log(client);
   let response = await ServiceOptionHold.updateServiceOptionHold(id, client);
 
   if (response.rowCount === 0) {

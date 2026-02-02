@@ -22,6 +22,30 @@ const Order = {
       return response;
     }
   },
+  async getStateById(order_id, client = null) {
+    let sql = `SELECT state FROM ${ORDERS_TABLE} WHERE id = $1`;
+    let params = [order_id];
+    if (client) {
+      console.log("Looking up order using client");
+      let response = await client.query(sql, params);
+      return response;
+    }
+    console.log("Looking up order using pool");
+    let response = await pool.query(sql, params);
+    return response;
+  },
+  async transitionStateById(order_id, state, client = null) {
+    let sql = `UPDATE ${ORDERS_TABLE} SET state = '${state}' WHERE id = $1`;
+
+    let params = [order_id];
+    if (client) {
+      let response = await client.query(sql, params);
+      return response;
+    }
+
+    let response = await pool.query(sql, params);
+    return response;
+  },
 };
 
 module.exports = Order;

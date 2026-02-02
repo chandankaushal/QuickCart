@@ -1,8 +1,10 @@
 require("dotenv").config();
 const axios = require("axios");
 const { ExpressError } = require("../utils/ExpressError");
-async function sendWebhook(order, type) {
+const logger = require("./logger");
+async function sendWebhook(order, type, log = logger) {
   try {
+    log.info(`Sending Webhook to ${process.env.WEBHOOK_URL}`);
     const response = await axios.post(
       process.env.WEBHOOK_URL,
       {
