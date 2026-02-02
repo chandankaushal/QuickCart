@@ -20,6 +20,9 @@ A robust RESTful API for managing an e-commerce cart system with user authentica
 - **Security**: Password hashing with bcrypt, parameterized SQL queries
 - **Testing**: Jest test suite with 56% code coverage
 
+- **Webhook Integration**: Order state changes trigger webhooks to external OMS (Order Management System) with rollback on failure
+- **Service Layer**: All business logic is handled in dedicated service files, including transactional helpers like `withTransaction`
+
 ### 🚧 Partially Implemented
 
 - **User Update**: Endpoint exists but not fully implemented
@@ -63,6 +66,10 @@ JWT_REFRESH_EXPIRES_IN=7d
 NODE_ENV=development
 ENVIRONMENT=dev
 SERVICE_NAME=quickcart
+WEBHOOK_URL=https://your-oms-endpoint.com/webhook
+SES_SMTP_ENDPOINT=email-smtp.us-east-1.amazonaws.com
+SES_SMTP_USERNAME=your_smtp_username
+SES_SMTP_PASSWORD=your_smtp_password
 ```
 
 4. Set up the database:
@@ -161,15 +168,39 @@ The pickup order creation follows this sequence:
 4. **Reserve Slot** → `POST /service_options/reserve` to hold a time slot
 5. **Create Order** → `POST /orders/pickup/create_order` with held slot ID
 
-The order creation process runs in a database transaction:
+**Transactional Order Processing:**
+All order creation and state transitions are performed inside a database transaction using the `withTransaction` utility. If any step fails (including sending a webhook), all changes are rolled back to maintain consistency.
 
-- Validates service option hold is not expired
-- Verifies product availability
-- Marks service option hold as taken
-- Updates product quantities
-- Creates the order record
+Steps in the transaction:
+
+- Validate service option hold is not expired
+- Verify product availability
+- Mark service option hold as taken
+- Update product quantities
+- Create the order record
+- Send a webhook to the OMS (Order Management System)
+
+If the webhook fails, the transaction is rolled back and the order state is not updated.
 
 ## 🔌 API Endpoints
+
+## 🌐 Webhook Integration
+
+Order state changes (e.g., pickup, delivered) trigger a webhook to the configured OMS endpoint (`WEBHOOK_URL`).
+If the webhook fails, the database transaction is rolled back and the order state is not updated.
+
+Webhook payload example:
+
+```json
+{
+  "id": "order_id",
+  "state": "next_state",
+  "type": "ORDER_UPDATED"
+}
+```
+
+**Service Layer:**
+All business logic is handled in the `service/` directory. Transactional operations use the `withTransaction` utility from `utils/withTransaction.js` to ensure atomicity and consistency.
 
 ### User Management
 
@@ -350,6 +381,8 @@ curl -X POST http://localhost:2000/users/refresh \
 
 ## 🧪 Testing
 
+Test coverage includes all major services, models, and utility functions. See the `tests/` folder for Jest test files. Coverage reports are available in `coverage/`.
+
 Tests are written using Jest (^30.2.0). Run tests:
 
 ```bash
@@ -372,6 +405,8 @@ tail -f logs/quickcart.log | npx pino-pretty
 ```
 
 ## 🛡️ Error Handling
+
+All errors are handled centrally using the custom `ExpressError` class and error middleware. Database errors, validation errors, and external service errors (e.g., webhook failures) are returned in a consistent format.
 
 All errors follow a consistent format:
 
@@ -519,6 +554,11 @@ ISC
 - `serviceOptionsService.test.js` - Service options layer
 
 ## 📞 Support
+
+For issues, questions, or feature requests:
+
+- Open an issue on GitHub
+- Contact: support@quickcart.com
 
 For issues and questions:
 
