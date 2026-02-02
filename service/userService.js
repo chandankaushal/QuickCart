@@ -113,8 +113,8 @@ async function registerUser(name, email, password, log = logger) {
     log.info("SignUp Token created");
     let { token_id } = await storeSignUpTokenInDB(signUpJwtToken, log, client);
     log.info("Signup Token Stored in DB");
-    // Body: Please click on the link to verify your account http://localhost:2000/users/email-verify?token_id=${token_id}
-    let info = await sendEmail({
+    // Sending Email to the User.
+    await sendEmail({
       to: "chandankaushalwork@gmail.com",
       subject: "QuickCart-Account-Verify",
       body: `Please click on the link to verify your account http://localhost:2000/users/email-verify?token_id=${token_id}`,

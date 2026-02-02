@@ -9,6 +9,7 @@ async function withTransaction(work) {
     await client.query("COMMIT");
     return result;
   } catch (error) {
+    console.log("ROLLING BACK");
     await client.query("ROLLBACK");
     throw error;
   } finally {
