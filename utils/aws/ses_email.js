@@ -1,7 +1,6 @@
 require("dotenv").config();
-// console.log(process.env);
 const nodemailer = require("nodemailer");
-const { ExpressError } = require("./ExpressError");
+const { ExpressError } = require("../ExpressError");
 const transporter = nodemailer.createTransport({
   host: process.env.SES_SMTP_ENDPOINT,
   port: 587,
@@ -12,7 +11,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-async function sendEmail({ to, subject, body }) {
+async function sendEmail({
+  to = "chandankaushalwork@gmail.com",
+  subject,
+  body,
+}) {
   try {
     const info = await transporter.sendMail({
       from: process.env.SES_FROM_EMAIL_ADDRESS,
@@ -25,7 +28,7 @@ async function sendEmail({ to, subject, body }) {
     return info;
   } catch (error) {
     throw new ExpressError(
-      "There was a problem in sending the verification email",
+      `There was a problem in sending the verification email ${error}`,
       500,
       "EMAIL_SEND_ERROR",
     );
@@ -33,11 +36,3 @@ async function sendEmail({ to, subject, body }) {
 }
 
 module.exports = sendEmail;
-
-// (async () => {
-//   const info = await sendEmail({
-//     to: "7aze4.test@inbox.testmail.app",
-//     subject: "TESTTEST",
-//     body: "body test",
-//   });
-// })();
