@@ -14,7 +14,7 @@ const {
 const crypto = require("crypto");
 const logger = require("../utils/logger");
 const withTransaction = require("../utils/withTransaction");
-const sendEmail = require("../utils/ses_email");
+const enqueueEmailJob = require("../queues/enqueueEmailJob");
 
 async function getUserByEmail(email, user_id, log = logger) {
   if (!user_id) {
@@ -109,17 +109,18 @@ async function registerUser(name, email, password, log = logger) {
     };
     //create a sign-up JWT token and store it in DB, which we can then verify when user verifies email.
     const signUpJwtToken = signUpToken(userObj);
-    // console.log(`SIGNUP:${signUpJwtToken}`);
+
     log.info("SignUp Token created");
     let { token_id } = await storeSignUpTokenInDB(signUpJwtToken, log, client);
     log.info("Signup Token Stored in DB");
-    // Sending Email to the User.
-    await sendEmail({
-      to: "chandankaushalwork@gmail.com",
-      subject: "QuickCart-Account-Verify",
+    // Adding a job to send email to the Email SQS queue.
+    await enqueueEmailJob({
+      type: "SIGNUP_USER",
+      userId: uuid,
+      email: process.env.TO_EMAIL || email,
+      subject: "Welcome to QuickCart",
       body: `Please click on the link to verify your account http://localhost:2000/users/email-verify?token_id=${token_id}`,
     });
-
     log.info({ user_id: userObj.id, email: email }, "Email Sent to the user");
 
     return token_id;

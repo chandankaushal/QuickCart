@@ -10,19 +10,18 @@ async function sendWebhook(order, type, log = logger) {
       {
         ...order,
         type: type,
-        // type: "ORDER_CREATED",
       },
       {
         headers: {
           "Content-Type": "application/json",
         },
-        timeout: 5000, // optional: set a timeout in ms
+        timeout: 5000, // 5s timeout
       },
     );
     return response.data;
   } catch (error) {
     throw new ExpressError(
-      "There was an error creating Order in the Order Management System",
+      "There was an error creating Order in the Order Management System. Please check if the order Management System is running.",
       500,
       "OMS_ERROR",
     );
