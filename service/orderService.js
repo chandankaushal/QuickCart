@@ -22,8 +22,6 @@ async function create_pickup_order(
 ) {
   //check if the location is exists
   const storeId = Number(store_id);
-  // console.log(store_id);
-
   if (!Number.isInteger(storeId) || !store_id) {
     throw new ExpressError("Invalid store id", 400, "INVALID_STORE_ID");
   }
@@ -53,10 +51,7 @@ async function create_pickup_order(
       "ITEM_NOT_FOUND",
     );
   }
-  //Mark the hold as expired
-
-  // DB updates start here
-
+  //DB Updates
   let orderResult = await withTransaction(async (client) => {
     log.info(
       { service_option_hold_id, order_id, storeId },
@@ -86,6 +81,8 @@ async function create_pickup_order(
     };
     log.info({ order_id }, "Creating order in Order Management System");
     await createOmsOrder(orderObj);
+    // Send Email to the customer with details of the items and the time of pickup
+    // we create a new Obj with details and fetch the ETA from the service_option_hold_id
 
     return orderResponse;
   });
