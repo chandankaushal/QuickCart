@@ -99,5 +99,9 @@ async function create_pickup_order(
     );
   }
 }
+async function cancel_Order(order_id) {
+  let response = await Order.transitionStateById(order_id, "cancelled");
+  return response;
+}
 
-module.exports = { create_pickup_order };
+module.exports = { create_pickup_order, cancel_Order };

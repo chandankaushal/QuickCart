@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   createPickupOrder,
   transitionOrder,
+  cancelOrder,
 } = require("../controllers/orderController");
 const wrapAsync = require("../utils/wrapAsync");
 const { checkValidToken } = require("../middleware/auth");
@@ -15,7 +16,7 @@ router.post(
   checkValidToken,
   wrapAsync(createPickupOrder),
 );
-//router.post("/cancel_order") // Cancel Order
+router.post("/cancel", wrapAsync(cancelOrder)); // Cancel Order
 router.post("/transition_order", wrapAsync(transitionOrder));
 
 module.exports = router;
