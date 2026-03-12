@@ -18,6 +18,8 @@ const mockLogger = {
 };
 
 const createOmsOrder = require("../../service/relayService");
+const OrderItems = require("../../models/orderItemsModel");
+const calculateOrderTotal = require("../../service/calculateOrderTotal");
 
 jest.mock("../../models/orderModel");
 jest.mock("../../models/storeModel");
@@ -25,6 +27,8 @@ jest.mock("../../service/serviceOptionHoldService");
 jest.mock("../../service/productService");
 jest.mock("../../utils/withTransaction");
 jest.mock("../../service/relayService");
+jest.mock("../../models/orderItemsModel");
+jest.mock("../../service/calculateOrderTotal");
 const mockClient = {};
 
 describe("Create Order Service", () => {
@@ -33,6 +37,8 @@ describe("Create Order Service", () => {
     withTransaction.mockImplementation(async (callback) => {
       return await callback(mockClient);
     });
+    OrderItems.addItems.mockResolvedValue({ rowCount: 1 });
+    calculateOrderTotal.mockResolvedValue(100);
   });
 
   it("should return a successful response if an order is created", async () => {
@@ -129,6 +135,7 @@ describe("Create Order Service", () => {
       store_id,
       service_option_hold_id,
       user_id,
+      100,
       mockClient,
     );
 
@@ -405,6 +412,7 @@ describe("Create Order Service", () => {
       store_id,
       service_option_hold_id,
       user_id,
+      100,
       mockClient,
     );
   });
