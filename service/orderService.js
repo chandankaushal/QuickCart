@@ -12,6 +12,7 @@ const {
 const logger = require("../utils/logger");
 const withTransaction = require("../utils/withTransaction");
 const createOmsOrder = require("./relayService");
+const OrderItems = require("../models/orderItemsModel");
 async function create_pickup_order(
   order_id,
   store_id,
@@ -62,6 +63,7 @@ async function create_pickup_order(
     // Subtract the items from Products table
     log.info({ order_id, items }, "Adjusting Stock");
     await updateQtyinDb(items, storeId, client);
+    // Add order_items table
 
     // put the order in the DB
     const orderResponse = await Order.pickupOrder(
@@ -69,6 +71,17 @@ async function create_pickup_order(
       storeId,
       service_option_hold_id,
       user_id,
+      client,
+    );
+    console.log("Added to order Db");
+    // Put items in the order_items db
+    log.info("Putting items in the Order items DB");
+    await OrderItems.addItems(
+      {
+        order_id: order_id,
+        items: items,
+        location_code: storeId,
+      },
       client,
     );
     let orderObj = {
