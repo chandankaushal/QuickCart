@@ -2,7 +2,6 @@ const ORDER_ITEMS_TABLE_NAME = `quickcart.order_items`;
 const crypto = require("crypto");
 const Product = require("../models/productModel");
 const pool = require("../db");
-const { info } = require("console");
 
 const OrderItems = {
   async addItems(information, client = null) {

@@ -8,10 +8,17 @@ const Order = {
     store_id,
     service_option_hold_id,
     user_id,
+    order_total,
     client = null,
   ) {
-    let sql = `INSERT INTO ${ORDERS_TABLE} (id,service_option_hold_id,user_id,store_id) VALUES ($1,$2,$3,$4)`;
-    let params = [order_id, service_option_hold_id, user_id, store_id];
+    let sql = `INSERT INTO ${ORDERS_TABLE} (id,service_option_hold_id,user_id,store_id,order_total) VALUES ($1,$2,$3,$4,$5)`;
+    let params = [
+      order_id,
+      service_option_hold_id,
+      user_id,
+      store_id,
+      order_total,
+    ];
     if (client) {
       let response = await client.query(sql, params);
       return response;
@@ -42,6 +49,9 @@ const Order = {
 
     let response = await pool.query(sql, params);
     return response;
+  },
+  async getById(order_id) {
+    let sql = `SELECT * FROM ${ORDERS_TABLE}`;
   },
 };
 

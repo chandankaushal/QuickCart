@@ -59,6 +59,17 @@ const Product = {
   },
   async createNewProduct() {},
   async DeleteProduct() {},
+  async getPriceByUpc(upc, store_id, client = null) {
+    const upcArray = Array.isArray(upc) ? upc : [upc]; // if we get single upc then we pass as [upc]
+    let sql = `SELECT upc,price_cents FROM ${PRODUCT_TABLE} WHERE upc = ANY($1::bigint[]) AND store_id = $2`; // Using IN to lookup mutiple products at once
+    let values = [upcArray, store_id];
+    if (client) {
+      const result = await client.query(sql, values);
+      return result;
+    }
+    const result = await pool.query(sql, values);
+    return result;
+  },
 };
 
 module.exports = Product;
