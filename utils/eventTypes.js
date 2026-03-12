@@ -9,6 +9,7 @@ const ORDER_STATES = [
   "picking",
   "ready_for_pickup",
   "delivered",
+  "cancelled",
 ];
 
 module.exports = { ORDER_STATES, ORDER_EVENT_TYPES };

@@ -32,5 +32,21 @@ async function transitionOrder(req, res) {
     200,
   );
 }
+async function cancelOrder(req, res) {
+  const { order_id, state = "cancelled", source } = req.body;
+  let { id, next_state } = await transitionOrderService(
+    order_id,
+    state,
+    source,
+    req.log,
+  );
 
-module.exports = { createPickupOrder, transitionOrder };
+  sendSuccess(
+    res,
+    "Order Canceled Successfully",
+    { order_id: id, state: next_state },
+    200,
+  );
+}
+
+module.exports = { createPickupOrder, transitionOrder, cancelOrder };

@@ -4,7 +4,12 @@ const { ExpressError } = require("../utils/ExpressError");
 const logger = require("../utils/logger");
 const sendWebhook = require("../utils/sendWebhook");
 const withTransaction = require("../utils/withTransaction");
-async function transitionOrderService(id, state = null, log = logger) {
+async function transitionOrderService(
+  id,
+  state = null,
+  source = null,
+  log = logger,
+) {
   // Look-up Order current state from DB
   log.info("Looking up Order in DB");
   const { rows } = await Order.getStateById(id);
@@ -16,6 +21,13 @@ async function transitionOrderService(id, state = null, log = logger) {
       400,
       "ORDER_ALREADY_DELIVERED",
     );
+  } else if (current_state === "cancelled") {
+    //TO-DO If the current state is cancelled we dont need to check next state just move it to canceled.
+    throw new ExpressError(
+      "Order is already cancelled",
+      400,
+      "ORDER_ALREADY_CANCELLED",
+    );
   }
   let idx = ORDER_STATES.ORDER_STATES.indexOf(current_state);
   let next_state;
@@ -24,8 +36,8 @@ async function transitionOrderService(id, state = null, log = logger) {
     next_state = ORDER_STATES.ORDER_STATES[idx + 1];
     log.info(`Next State for Order ${id} is ${next_state}`);
   } else {
-    log.info(`Next State for Order ${id} is ${next_state}`);
     next_state = state;
+    log.info(`Next State for Order ${id} is ${next_state}`);
   }
 
   const withTransactionResponse = await withTransaction(async (client) => {
@@ -33,6 +45,17 @@ async function transitionOrderService(id, state = null, log = logger) {
     log.info(
       `Sending Webhook of type ${ORDER_STATES.ORDER_EVENT_TYPES.ORDER_UPDATED} to OMS `,
     );
+    // TO-DO if(next_state === "cancelled")
+    // {
+    //   //Put the items in the order back in stock
+    //   //await updateQtyinDb(items, storeId, client);
+    // }
+    //Sending Webhook if source of api call is not from OMS
+    if (source === "OMS") {
+      log.info("No Need to send webhook as order is being cancelled from OMS");
+      return { id, next_state };
+    }
+
     await sendWebhook(
       { id, state: next_state },
       ORDER_STATES.ORDER_EVENT_TYPES.ORDER_UPDATED,
