@@ -14,6 +14,9 @@ const withTransaction = require("../utils/withTransaction");
 const createOmsOrder = require("./relayService");
 const OrderItems = require("../models/orderItemsModel");
 const calculateOrderTotal = require("../service/calculateOrderTotal");
+const Product = require("../models/productModel");
+const sendWebhook = require("../utils/sendWebhook");
+const ORDER_EVENT_TYPES = require("../utils/eventTypes");
 async function create_pickup_order(
   order_id,
   store_id,
@@ -113,9 +116,45 @@ async function create_pickup_order(
     );
   }
 }
-async function cancel_Order(order_id) {
-  let response = await Order.transitionStateById(order_id, "cancelled");
-  return response;
+async function cancel_Order(order_id, source, log = logger) {
+  //Only cancel Order if state is not cancelled
+  const { rows } = await Order.getStateById(order_id);
+  const current_state = rows[0].state;
+  if (current_state === "cancelled") {
+    throw new ExpressError(
+      "Order is already cancelled",
+      400,
+      "ORDER_ALREADY_CANCELLED",
+    );
+  }
+  // Figure out what is in the order
+  log.info({ order_id: order_id }, "Looking up Items in the Order");
+  const items = await OrderItems.getItems(order_id);
+  //Build what needs to be added back to the table and add the products back
+  let cancelOrderResult = await withTransaction(async (client) => {
+    await Product.addProducts(items, client);
+    //cancel the order
+    log.info({ order_id: order_id }, "Marking the order as canceled");
+    let response = await Order.transitionStateById(
+      order_id,
+      "cancelled",
+      client,
+    );
+    log.info({ order_id }, "Order has been cancelled");
+    await OrderItems.deleteOrder(order_id, client);
+    log.info({ order_id }, "Removed from Order Items DB");
+    if (source === "OMS") {
+      log.info({ order_id }, "Cancelled from OMS no need for webhook");
+      return response;
+    }
+    await sendWebhook(
+      { order_id, state: current_state },
+      ORDER_EVENT_TYPES.ORDER_UPDATED,
+      log,
+    );
+    return response;
+  });
+  return cancelOrderResult;
 }
 
 module.exports = { create_pickup_order, cancel_Order };

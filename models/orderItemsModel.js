@@ -52,5 +52,26 @@ const OrderItems = {
     const queryResult = await pool.query(sql, params);
     return queryResult;
   },
+  async getItems(order_id) {
+    let sql = `SELECT product_id, quantity from ${ORDER_ITEMS_TABLE_NAME} WHERE order_id = $1`;
+    let params = [order_id];
+
+    let { rows: items } = await pool.query(sql, params);
+
+    return items;
+  },
+  async deleteOrder(order_id, client) {
+    let sql = `DELETE FROM ${ORDER_ITEMS_TABLE_NAME} WHERE order_id = $1`;
+    let params = [order_id];
+    if (client) {
+      let response = await client.query(sql, params);
+
+      return response;
+    }
+    let response = await pool.query(sql, params);
+
+    return response;
+  },
 };
+
 module.exports = OrderItems;

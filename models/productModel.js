@@ -70,6 +70,34 @@ const Product = {
     const result = await pool.query(sql, values);
     return result;
   },
+  async addProducts(items, client = null) {
+    let preStatement = `UPDATE ${PRODUCT_TABLE} SET qty = qty + CASE product_id `;
+    let caseStatement = items
+      .map(
+        (item, index) =>
+          `WHEN $${index * 2 + 1}::bigint THEN $${index * 2 + 2}::integer`,
+      )
+      .join(" ");
+    let endStatement = ` END WHERE product_id = ANY($${
+      items.length * 2 + 1
+    }::bigint[])`;
+    let finalStatement = preStatement + caseStatement + endStatement; // Combining all statements to make one
+
+    let params = items.flatMap((item) => [
+      Number(item.product_id),
+      Number(item.quantity),
+    ]); //Product_id and qty for CASE Statements
+    let product_ids = items.map((item) => Number(item.product_id)); // UPC for Where clause
+    params.push(product_ids); // Pushing upcs for where clause in params
+    if (client) {
+      let queryResult = await client.query(finalStatement, params);
+
+      return queryResult;
+    }
+    let queryResult = await pool.query(finalStatement, params);
+    console.log("ADDED TO DB");
+    return queryResult;
+  },
 };
 
 module.exports = Product;
