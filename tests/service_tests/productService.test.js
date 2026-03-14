@@ -203,7 +203,7 @@ describe("Product Service", () => {
       const result = await updateQtyinDb(items, store_id, mockClient);
 
       expect(result).toBe(2);
-      console.log(items);
+
       expect(Product.batchUpdateProductQty).toHaveBeenCalledWith(
         items,
         store_id,
