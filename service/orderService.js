@@ -17,6 +17,7 @@ const calculateOrderTotal = require("../service/calculateOrderTotal");
 const Product = require("../models/productModel");
 const sendWebhook = require("../utils/sendWebhook");
 const ORDER_EVENT_TYPES = require("../utils/eventTypes");
+
 async function create_pickup_order(
   order_id,
   store_id,
@@ -117,6 +118,7 @@ async function create_pickup_order(
   }
 }
 async function cancel_Order(order_id, source, log = logger) {
+  //Check Owner
   //Only cancel Order if state is not cancelled
   const { rows } = await Order.getStateById(order_id);
   const current_state = rows[0].state;
@@ -127,6 +129,7 @@ async function cancel_Order(order_id, source, log = logger) {
       "ORDER_ALREADY_CANCELLED",
     );
   }
+
   // Figure out what is in the order
   log.info({ order_id: order_id }, "Looking up Items in the Order");
   const items = await OrderItems.getItems(order_id);

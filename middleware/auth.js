@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { ExpressError, UnauthorizedError } = require("../utils/ExpressError");
 const jwt_token = require("../models/jwtTokenModel");
+const isOrderOwner = require("../utils/orderOwner");
 
 function checkValidToken(req, res, next) {
   let authHeader = req.headers.authorization;
@@ -8,7 +9,7 @@ function checkValidToken(req, res, next) {
     throw new ExpressError(
       "Auth Token missing or Invalid",
       401,
-      "MISSING_OR_NO_TOKEN"
+      "MISSING_OR_NO_TOKEN",
     );
   }
 
@@ -23,7 +24,7 @@ function checkValidToken(req, res, next) {
     throw new ExpressError(
       "Auth Token Expired or Invalid",
       401,
-      "Unauthorized"
+      "Unauthorized",
     );
   }
 }
@@ -34,7 +35,7 @@ async function checkValidRefreshToken(req, res, next) {
     throw new ExpressError(
       "Refresh Token Missing or invalid",
       401,
-      "MISSING_OR_NO_TOKEN"
+      "MISSING_OR_NO_TOKEN",
     );
   }
 
@@ -45,10 +46,10 @@ async function checkValidRefreshToken(req, res, next) {
       //TO-DO If this happens invalidate all refresh tokens for that user.
       req.log.warn(
         { user_id: decoded.id },
-        "Possible Token Theft, Revoking all refresh tokens for this user"
+        "Possible Token Theft, Revoking all refresh tokens for this user",
       );
       const deletedTokens = await jwt_token.deleteRefreshTokenForUser(
-        decoded.id
+        decoded.id,
       );
       req.log.info({ count: deletedTokens.rowCount }, "Revoked refresh tokens");
       res.clearCookie("refresh_token"); //Clearing cookie
@@ -62,9 +63,25 @@ async function checkValidRefreshToken(req, res, next) {
     throw new ExpressError(
       "Auth Token Expired or Invalid",
       401,
-      "Unauthorized"
+      "Unauthorized",
     );
   }
 }
+async function checkOwner(req, res, next) {
+  if (!req.headers.authorization) {
+    throw new ExpressError("No Token", 401, "UNAUTHORIZED");
+  }
+  const token = req.headers.authorization.split(" ")[1];
+  //Decode Token
+  const decoded = jwt.decode(token);
+  const user_id = decoded.id;
 
-module.exports = { checkValidToken, checkValidRefreshToken };
+  const { order_id } = req.body;
+
+  //Check if user is owner of that order
+  await isOrderOwner(order_id, user_id, req.log);
+  // if yes then proceed;
+  next();
+}
+
+module.exports = { checkValidToken, checkValidRefreshToken, checkOwner };
