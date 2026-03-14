@@ -75,11 +75,13 @@ async function checkOwner(req, res, next) {
   //Decode Token
   const decoded = jwt.decode(token);
   const user_id = decoded.id;
+  const role = decoded.role;
 
   const { order_id } = req.body;
 
   //Check if user is owner of that order
-  await isOrderOwner(order_id, user_id, req.log);
+  await isOrderOwner(order_id, user_id, role, req.log);
+
   // if yes then proceed;
   next();
 }
