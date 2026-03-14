@@ -17,6 +17,7 @@ const calculateOrderTotal = require("../service/calculateOrderTotal");
 const Product = require("../models/productModel");
 const sendWebhook = require("../utils/sendWebhook");
 const ORDER_EVENT_TYPES = require("../utils/eventTypes");
+
 async function create_pickup_order(
   order_id,
   store_id,
@@ -117,8 +118,12 @@ async function create_pickup_order(
   }
 }
 async function cancel_Order(order_id, source, log = logger) {
+  //Check Owner
   //Only cancel Order if state is not cancelled
-  const { rows } = await Order.getStateById(order_id);
+  const { rows, rowCount } = await Order.getStateById(order_id);
+  if (rowCount === 0) {
+    throw new ExpressError("Order does not exist", 400, "NO_ORDER");
+  }
   const current_state = rows[0].state;
   if (current_state === "cancelled") {
     throw new ExpressError(
@@ -127,9 +132,14 @@ async function cancel_Order(order_id, source, log = logger) {
       "ORDER_ALREADY_CANCELLED",
     );
   }
+
   // Figure out what is in the order
   log.info({ order_id: order_id }, "Looking up Items in the Order");
   const items = await OrderItems.getItems(order_id);
+  console.log(items);
+  if (items.length === 0) {
+    throw new Error("No items found in the order");
+  }
   //Build what needs to be added back to the table and add the products back
   let cancelOrderResult = await withTransaction(async (client) => {
     await Product.addProducts(items, client);

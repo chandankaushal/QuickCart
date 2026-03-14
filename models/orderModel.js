@@ -51,7 +51,12 @@ const Order = {
     return response;
   },
   async getById(order_id) {
-    let sql = `SELECT * FROM ${ORDERS_TABLE}`;
+    let sql = `SELECT * FROM ${ORDERS_TABLE} WHERE id = $1`;
+    let params = [order_id];
+
+    const response = await pool.query(sql, params);
+
+    return response.rows;
   },
 };
 

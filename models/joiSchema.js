@@ -38,7 +38,7 @@ const orderSchema = Joi.object({
       Joi.object({
         upc: Joi.number().integer().required(),
         qty: Joi.number().integer().min(1).required(),
-      })
+      }),
     )
     .min(1)
     .required(),
@@ -56,6 +56,9 @@ const getStoreSchema = Joi.object({
   zip_code: Joi.number().integer().required(),
   street: Joi.string().optional(),
 });
+const cancelOrderSchema = Joi.object({
+  order_id: Joi.string().uuid().required(),
+});
 module.exports = {
   userSchema,
   storeSchema,
@@ -65,4 +68,5 @@ module.exports = {
   getServiceOptionSchema,
   reserveServiceOptionSchema,
   getStoreSchema,
+  cancelOrderSchema,
 };
