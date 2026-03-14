@@ -17,7 +17,7 @@ async function enqueueEmailJob(payload) {
 
     return { messageId: resp.MessageId };
   } catch (err) {
-    console.log(err);
+    throw new Error(err.message);
   }
 }
 

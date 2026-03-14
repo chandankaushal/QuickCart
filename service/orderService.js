@@ -136,7 +136,7 @@ async function cancel_Order(order_id, source, log = logger) {
   // Figure out what is in the order
   log.info({ order_id: order_id }, "Looking up Items in the Order");
   const items = await OrderItems.getItems(order_id);
-  console.log(items);
+
   if (items.length === 0) {
     throw new Error("No items found in the order");
   }
