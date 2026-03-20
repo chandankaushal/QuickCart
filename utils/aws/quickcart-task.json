@@ -168,10 +168,6 @@
           "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_LOGS_CONFIG_FORCE_USE_TCP::"
         },
         {
-          "name": "DD_LOGS_CONFIG_FORCE_USE_TCP",
-          "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_LOGS_CONFIG_FORCE_USE_TCP::"
-        },
-        {
           "name": "DD_APM_ENABLED",
           "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_APM_ENABLED::"
         },
