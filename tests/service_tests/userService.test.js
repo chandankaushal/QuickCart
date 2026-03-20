@@ -21,8 +21,8 @@ const jwt_token = require("../../models/jwtTokenModel");
 const { validateEmail } = require("../../utils/validEmail");
 const withTransaction = require("../../utils/withTransaction");
 const { any } = require("joi");
-const sendEmail = require("../../utils/aws/ses_email");
-const enqueueEmailJob = require("../../queues/enqueueEmailJob");
+
+const sendToQueue = require("../../queues/sendToQueue");
 //Need this to Mock the functions
 jest.mock("../../models/userModel");
 jest.mock("../../utils/hash");
@@ -30,7 +30,7 @@ jest.mock("../../utils/auth");
 jest.mock("../../utils/validEmail");
 jest.mock("../../models/jwtTokenModel");
 jest.mock("../../utils/withTransaction", () => jest.fn());
-jest.mock("../../queues/enqueueEmailJob");
+jest.mock("../../queues/sendToQueue");
 
 const mockLogger = {
   info: jest.fn(),
@@ -150,11 +150,12 @@ describe("registerUser function", () => {
     const fakeDbResponse = {
       rowCount: 1,
     };
-    let enqueueEmailJobfakeResponse = { messageId: "test-message" };
+    let sendToQueueResponse = { messageId: "test-message" };
 
     User.register.mockResolvedValue(fakeDbResponse);
     storeSignUpTokenInDB.mockResolvedValue({ token_id: "testToken" });
-    enqueueEmailJob.mockResolvedValue(enqueueEmailJobfakeResponse);
+    sendToQueue.mockResolvedValue(sendToQueueResponse);
+
     let result = await registerUser(
       testName,
       testEmail,
@@ -174,7 +175,7 @@ describe("registerUser function", () => {
       mockClient,
     );
     expect(signUpToken).toHaveBeenCalledWith(userObj);
-    expect(enqueueEmailJob).toHaveBeenCalled();
+    expect(sendToQueue).toHaveBeenCalled();
   });
 });
 

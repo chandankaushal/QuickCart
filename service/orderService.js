@@ -17,6 +17,7 @@ const calculateOrderTotal = require("../service/calculateOrderTotal");
 const Product = require("../models/productModel");
 const sendWebhook = require("../utils/sendWebhook");
 const ORDER_EVENT_TYPES = require("../utils/eventTypes");
+const sendToQueue = require("../queues/sendToQueue");
 
 async function create_pickup_order(
   order_id,
@@ -98,7 +99,9 @@ async function create_pickup_order(
       created_at: new Date().toISOString(),
     };
     log.info({ order_id }, "Creating order in Order Management System");
-    await createOmsOrder(orderObj);
+    //Send the Webhook to Queue
+    await sendToQueue(orderObj, "create_order");
+
     // Send Email to the customer with details of the items and the time of pickup
     // we create a new Obj with details and fetch the ETA from the service_option_hold_id
 

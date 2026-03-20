@@ -24,7 +24,7 @@ async function sendEmail({
       text: body, // Plain-text version of the message
       // html: "<b>Hello world?</b>", // HTML version of the message
     });
-
+    console.log(`Sending Email to ${to}`);
     return info;
   } catch (error) {
     throw new ExpressError(

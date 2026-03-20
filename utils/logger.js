@@ -7,8 +7,10 @@ if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
 const destination =
-  process.env.NODE_ENV === "test" || process.env.CI
-    ? pino.destination(1) // stdout in CI/tests
+  process.env.NODE_ENV === "test" ||
+  process.env.CI ||
+  process.env.logs === "STDOUT"
+    ? pino.destination({ dest: 1, sync: true }) // stdout in CI/tests
     : pino.destination(path.join(logDir, "quickcart.log"));
 
 const logger = pino(
@@ -25,7 +27,7 @@ const logger = pino(
     },
     timestamp: () => `,"timestamp":"${new Date().toISOString()}"`,
   },
-  destination
+  destination,
 );
 
 module.exports = logger;

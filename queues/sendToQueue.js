@@ -3,14 +3,15 @@ const { SendMessageCommand } = require("@aws-sdk/client-sqs");
 const sqs = require("../utils/aws/sqsClient");
 const crypto = require("crypto");
 
-async function enqueueEmailJob(payload) {
+async function sendToQueue(payload, group_id) {
   const uniqueId = crypto.randomUUID();
   try {
+    console.log(`Sending group_id ${group_id}`);
     const resp = await sqs.send(
       new SendMessageCommand({
         QueueUrl: process.env.SQS_QUEUE_URL,
         MessageBody: JSON.stringify(payload),
-        MessageGroupId: "default",
+        MessageGroupId: group_id,
         MessageDeduplicationId: uniqueId,
       }),
     );
@@ -21,4 +22,4 @@ async function enqueueEmailJob(payload) {
   }
 }
 
-module.exports = enqueueEmailJob;
+module.exports = sendToQueue;
