@@ -1,0 +1,299 @@
+{
+    "taskDefinitionArn": "arn:aws:ecs:us-east-2:317105901262:task-definition/quickcart-task-stdout:13",
+    "containerDefinitions": [
+        {
+            "name": "quickcart",
+            "image": "317105901262.dkr.ecr.us-east-2.amazonaws.com/quickcart@sha256:f53419fefbdfab259c85f8ee86a49cddb3b2bc5bb42db34ff2089ac179db5f0c",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "container-port",
+                    "containerPort": 3000,
+                    "hostPort": 3000,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "EMAIL_SERVER_API_TOKEN",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:EMAIL_SERVER_API_TOKEN::"
+                },
+                {
+                    "name": "JWT_SIGN_UP_EXPIRES_IN",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:JWT_SIGN_UP_EXPIRES_IN::"
+                },
+                {
+                    "name": "DATABASE_HOST",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DATABASE_HOST::"
+                },
+                {
+                    "name": "AWS_SECRET_ACCESS_KEY",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:AWS_SECRET_ACCESS_KEY::"
+                },
+                {
+                    "name": "JWT_EXPIRES_IN",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:JWT_EXPIRES_IN::"
+                },
+                {
+                    "name": "SES_SMTP_USERNAME",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:SES_SMTP_USERNAME::"
+                },
+                {
+                    "name": "SES_FROM_EMAIL_ADDRESS",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:SES_FROM_EMAIL_ADDRESS::"
+                },
+                {
+                    "name": "AWS_ACCESS_KEY_ID",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:AWS_ACCESS_KEY_ID::"
+                },
+                {
+                    "name": "JWT_SECRET",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:JWT_SECRET::"
+                },
+                {
+                    "name": "JWT_SIGN_UP_SECRET",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:JWT_SIGN_UP_SECRET::"
+                },
+                {
+                    "name": "DATABASE_USERNAME",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DATABASE_USERNAME::"
+                },
+                {
+                    "name": "logs",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:logs::"
+                },
+                {
+                    "name": "SERVICE_NAME",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:SERVICE_NAME::"
+                },
+                {
+                    "name": "JWT_REFRESH_SECRET",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:JWT_REFRESH_SECRET::"
+                },
+                {
+                    "name": "AWS_REGION",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:AWS_REGION::"
+                },
+                {
+                    "name": "SQS_QUEUE_URL",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:SQS_QUEUE_URL::"
+                },
+                {
+                    "name": "DATABASE_NAME",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DATABASE_NAME::"
+                },
+                {
+                    "name": "PORT",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:PORT::"
+                },
+                {
+                    "name": "DD_AGENT_HOST",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_AGENT_HOST::"
+                },
+                {
+                    "name": "DATABASE_PORT",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DATABASE_PORT::"
+                },
+                {
+                    "name": "SES_SMTP_ENDPOINT",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:SES_SMTP_ENDPOINT::"
+                },
+                {
+                    "name": "SES_SMTP_PASSWORD",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:SES_SMTP_PASSWORD::"
+                },
+                {
+                    "name": "JWT_REFRESH_EXPIRES_IN",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:JWT_REFRESH_EXPIRES_IN::"
+                },
+                {
+                    "name": "DD_LOGS_INJECTION",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_LOGS_INJECTION::"
+                },
+                {
+                    "name": "IAM_SES_USERNAME",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:IAM_SES_USERNAME::"
+                },
+                {
+                    "name": "EMAIL_API_KEY",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:EMAIL_API_KEY::"
+                },
+                {
+                    "name": "DATABASE_PASSWORD",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DATABASE_PASSWORD::"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "dockerLabels": {
+                "com.datadoghq.ad.logs": "[{\"source\":\"nodejs\",\"service\":\"quickcart\"}]"
+            },
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/quickcart-task-stdout",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "us-east-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            },
+            "systemControls": []
+        },
+        {
+            "name": "datadog",
+            "image": "317105901262.dkr.ecr.us-east-2.amazonaws.com/datadog@sha256:4441eb57cce8f70158cb5341879ad5afe932ad057db45edb8de4d8c044013c97",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "apm",
+                    "containerPort": 8126,
+                    "hostPort": 8126,
+                    "protocol": "tcp"
+                },
+                {
+                    "containerPort": 8125,
+                    "hostPort": 8125,
+                    "protocol": "udp"
+                }
+            ],
+            "essential": false,
+            "environment": [
+                {
+                    "name": "DD_LOGS_CONFIG_FORCE_USE_TCP",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_LOGS_CONFIG_FORCE_USE_TCP::"
+                },
+                {
+                    "name": "DD_LOGS_CONFIG_FORCE_USE_TCP",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_LOGS_CONFIG_FORCE_USE_TCP::"
+                },
+                {
+                    "name": "DD_APM_ENABLED",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_APM_ENABLED::"
+                },
+                {
+                    "name": "DD_LOGS_ENABLED",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_LOGS_ENABLED::"
+                },
+                {
+                    "name": "DD_CONTAINER_EXCLUDE_LOGS",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_CONTAINER_EXCLUDE_LOGS::"
+                },
+                {
+                    "name": "DD_AUTOCONFIG_INCLUDE_FEATURES",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_AUTOCONFIG_INCLUDE_FEATURES::"
+                },
+                {
+                    "name": "DD_CONTAINER_INCLUDE_LOGS",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_CONTAINER_INCLUDE_LOGS::"
+                },
+                {
+                    "name": "DD_ECS_COLLECT_RESOURCE_TAGS_EC2",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_ECS_COLLECT_RESOURCE_TAGS_EC2::"
+                },
+                {
+                    "name": "DD_API_KEY",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_API_KEY::"
+                },
+                {
+                    "name": "DD_CONTAINER_LABELS_AS_TAGS",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_CONTAINER_LABELS_AS_TAGS::"
+                },
+                {
+                    "name": "DD_SITE",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_SITE::"
+                },
+                {
+                    "name": "DD_LOGS_CONFIG_USE_HTTP",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_LOGS_CONFIG_USE_HTTP::"
+                },
+                {
+                    "name": "DD_PROCESS_AGENT_ENABLED",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_PROCESS_AGENT_ENABLED::"
+                },
+                {
+                    "name": "DD_SERVICE",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_SERVICE::"
+                },
+                {
+                    "name": "ECS_FARGATE",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:ECS_FARGATE::"
+                },
+                {
+                    "name": "DD_ENV",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_ENV::"
+                },
+                {
+                    "name": "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:317105901262:secret:quickcart/AllSecrets-trdlqO:DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL::"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "systemControls": []
+        }
+    ],
+    "family": "quickcart-task-stdout",
+    "taskRoleArn": "arn:aws:iam::317105901262:role/ecsTaskRole",
+    "executionRoleArn": "arn:aws:iam::317105901262:role/service-role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "revision": 13,
+    "volumes": [],
+    "status": "ACTIVE",
+    "requiresAttributes": [
+        {
+            "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+        },
+        {
+            "name": "ecs.capability.execution-role-awslogs"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.ecr-auth"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.21"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.task-iam-role"
+        },
+        {
+            "name": "ecs.capability.execution-role-ecr-pull"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+        },
+        {
+            "name": "ecs.capability.task-eni"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
+        }
+    ],
+    "placementConstraints": [],
+    "compatibilities": [
+        "EC2",
+        "FARGATE",
+        "MANAGED_INSTANCES"
+    ],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "3072",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "registeredAt": "2026-03-18T22:06:03.613Z",
+    "registeredBy": "arn:aws:iam::317105901262:root",
+    "enableFaultInjection": false,
+    "tags": []
+}
