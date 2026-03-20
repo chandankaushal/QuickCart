@@ -14,11 +14,11 @@ const {
 const crypto = require("crypto");
 const logger = require("../utils/logger");
 const withTransaction = require("../utils/withTransaction");
-const enqueueEmailJob = require("../queues/enqueueEmailJob");
 const {
   SIGNUP_EMAIL_SUBJECT,
   buildSignupEmailBody,
 } = require("../utils/emailTemplates");
+const sendToQueue = require("../queues/sendToQueue");
 
 async function getUserByEmail(email, user_id, log = logger) {
   if (!user_id) {
@@ -118,13 +118,16 @@ async function registerUser(name, email, password, log = logger) {
     let { token_id } = await storeSignUpTokenInDB(signUpJwtToken, log, client);
     log.info("Signup Token Stored in DB");
     // Adding a job to send email to the Email SQS queue.
-    await enqueueEmailJob({
-      type: "SIGNUP_USER",
-      userId: uuid,
-      email: process.env.TO_EMAIL || email,
-      subject: SIGNUP_EMAIL_SUBJECT,
-      body: buildSignupEmailBody(token_id),
-    });
+    await sendToQueue(
+      {
+        type: "SIGNUP_USER",
+        userId: uuid,
+        email: process.env.TO_EMAIL || email,
+        subject: SIGNUP_EMAIL_SUBJECT,
+        body: buildSignupEmailBody(token_id),
+      },
+      "SIGNUP_EMAIL",
+    );
     log.info(
       { user_id: userObj.id, email: email },
       "Adding Signup Email job to the SQS queue",

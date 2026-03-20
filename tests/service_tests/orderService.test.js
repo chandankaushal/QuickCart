@@ -17,9 +17,9 @@ const mockLogger = {
   error: jest.fn(),
 };
 
-const createOmsOrder = require("../../service/relayService");
 const OrderItems = require("../../models/orderItemsModel");
 const calculateOrderTotal = require("../../service/calculateOrderTotal");
+const sendToQueue = require("../../queues/sendToQueue");
 
 jest.mock("../../models/orderModel");
 jest.mock("../../models/storeModel");
@@ -29,6 +29,7 @@ jest.mock("../../utils/withTransaction");
 jest.mock("../../service/relayService");
 jest.mock("../../models/orderItemsModel");
 jest.mock("../../service/calculateOrderTotal");
+jest.mock("../../queues/sendToQueue");
 const mockClient = {};
 
 describe("Create Order Service", () => {
@@ -56,10 +57,6 @@ describe("Create Order Service", () => {
         requested: 1,
       },
       problems: false,
-    };
-    let createOmsOrderResponse = {
-      status: 200,
-      message: "success",
     };
 
     let getStoreByIdDBresponse = {
@@ -95,6 +92,9 @@ describe("Create Order Service", () => {
         },
       ],
     };
+    let sendToQueueResponse = {
+      messageId: "TEST",
+    };
 
     Stores.getStoreById.mockResolvedValue(getStoreByIdDBresponse);
     isServiceOptionHoldValid.mockResolvedValue(
@@ -106,7 +106,7 @@ describe("Create Order Service", () => {
     );
     updateQtyinDb.mockResolvedValue(updateQtyinDbResponse);
     Order.pickupOrder.mockResolvedValue(pickupOrderDBresponse);
-    createOmsOrder.mockResolvedValue(createOmsOrderResponse);
+    sendToQueue.mockResolvedValue(sendToQueueResponse);
 
     let result = await create_pickup_order(
       fakeOrderId,
@@ -149,7 +149,7 @@ describe("Create Order Service", () => {
       service_option_hold_id,
     );
     expect(Stores.getStoreById).toHaveBeenCalledWith(store_id);
-    expect(createOmsOrder).toHaveBeenCalledWith(orderObj);
+    expect(sendToQueue).toHaveBeenCalledWith(orderObj, "create_order");
   });
   it("should return an error when invalid store_id is passed", async () => {
     let fakeOrderId = "abc123";
