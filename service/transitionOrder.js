@@ -1,9 +1,11 @@
 const Order = require("../models/orderModel");
+const sendToQueue = require("../queues/sendToQueue");
 const ORDER_STATES = require("../utils/eventTypes");
 const { ExpressError } = require("../utils/ExpressError");
 const logger = require("../utils/logger");
-const sendWebhook = require("../utils/sendWebhook");
 const withTransaction = require("../utils/withTransaction");
+const EVENT_GROUP_TYPES = require("../queues/eventGroupTypes");
+
 async function transitionOrderService(
   id,
   state = null,
@@ -22,7 +24,6 @@ async function transitionOrderService(
       "ORDER_ALREADY_DELIVERED",
     );
   } else if (current_state === "cancelled") {
-    //TO-DO If the current state is cancelled we dont need to check next state just move it to canceled.
     throw new ExpressError(
       "Order is already cancelled",
       400,
@@ -45,21 +46,18 @@ async function transitionOrderService(
     log.info(
       `Sending Webhook of type ${ORDER_STATES.ORDER_EVENT_TYPES.ORDER_UPDATED} to OMS `,
     );
-    // TO-DO if(next_state === "cancelled")
-    // {
-    //   //Put the items in the order back in stock
-    //   //await updateQtyinDb(items, storeId, client);
-    // }
-    //Sending Webhook if source of api call is not from OMS
     if (source === "OMS") {
       log.info("No Need to send webhook as order is being cancelled from OMS");
       return { id, next_state };
     }
-
-    await sendWebhook(
+    // Move this to Queue
+    log.info(
+      { order_id: id, eventGroup: EVENT_GROUP_TYPES.ORDER_UPDATED },
+      "Adding Order Update to SQS",
+    );
+    await sendToQueue(
       { id, state: next_state },
-      ORDER_STATES.ORDER_EVENT_TYPES.ORDER_UPDATED,
-      log,
+      EVENT_GROUP_TYPES.ORDER_UPDATED,
     );
 
     return { id, next_state };

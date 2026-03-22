@@ -11,13 +11,12 @@ const {
 } = require("../service/productService");
 const logger = require("../utils/logger");
 const withTransaction = require("../utils/withTransaction");
-const createOmsOrder = require("./relayService");
 const OrderItems = require("../models/orderItemsModel");
 const calculateOrderTotal = require("../service/calculateOrderTotal");
 const Product = require("../models/productModel");
-const sendWebhook = require("../utils/sendWebhook");
 const ORDER_EVENT_TYPES = require("../utils/eventTypes");
 const sendToQueue = require("../queues/sendToQueue");
+const EVENT_GROUP_TYPES = require("../queues/eventGroupTypes");
 
 async function create_pickup_order(
   order_id,
@@ -100,7 +99,7 @@ async function create_pickup_order(
     };
     log.info({ order_id }, "Creating order in Order Management System");
     //Send the Webhook to Queue
-    await sendToQueue(orderObj, "create_order");
+    await sendToQueue(orderObj, EVENT_GROUP_TYPES.ORDER_CREATED);
 
     // Send Email to the customer with details of the items and the time of pickup
     // we create a new Obj with details and fetch the ETA from the service_option_hold_id
@@ -123,12 +122,13 @@ async function create_pickup_order(
 async function cancel_Order(order_id, source, log = logger) {
   //Check Owner
   //Only cancel Order if state is not cancelled
+  const final_state = "cancelled";
   const { rows, rowCount } = await Order.getStateById(order_id);
   if (rowCount === 0) {
     throw new ExpressError("Order does not exist", 400, "NO_ORDER");
   }
   const current_state = rows[0].state;
-  if (current_state === "cancelled") {
+  if (current_state === final_state) {
     throw new ExpressError(
       "Order is already cancelled",
       400,
@@ -150,7 +150,7 @@ async function cancel_Order(order_id, source, log = logger) {
     log.info({ order_id: order_id }, "Marking the order as canceled");
     let response = await Order.transitionStateById(
       order_id,
-      "cancelled",
+      final_state,
       client,
     );
     log.info({ order_id }, "Order has been cancelled");
@@ -160,10 +160,10 @@ async function cancel_Order(order_id, source, log = logger) {
       log.info({ order_id }, "Cancelled from OMS no need for webhook");
       return response;
     }
-    await sendWebhook(
-      { order_id, state: current_state },
-      ORDER_EVENT_TYPES.ORDER_UPDATED,
-      log,
+    // Move this to Queue
+    await sendToQueue(
+      { order_id, state: final_state },
+      EVENT_GROUP_TYPES.ORDER_UPDATED,
     );
     return response;
   });
