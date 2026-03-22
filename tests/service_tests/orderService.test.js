@@ -26,7 +26,6 @@ jest.mock("../../models/storeModel");
 jest.mock("../../service/serviceOptionHoldService");
 jest.mock("../../service/productService");
 jest.mock("../../utils/withTransaction");
-jest.mock("../../service/relayService");
 jest.mock("../../models/orderItemsModel");
 jest.mock("../../service/calculateOrderTotal");
 jest.mock("../../queues/sendToQueue");
@@ -149,7 +148,7 @@ describe("Create Order Service", () => {
       service_option_hold_id,
     );
     expect(Stores.getStoreById).toHaveBeenCalledWith(store_id);
-    expect(sendToQueue).toHaveBeenCalledWith(orderObj, "create_order");
+    expect(sendToQueue).toHaveBeenCalledWith(orderObj, "CREATE_ORDER");
   });
   it("should return an error when invalid store_id is passed", async () => {
     let fakeOrderId = "abc123";

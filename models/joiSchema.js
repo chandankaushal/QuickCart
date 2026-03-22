@@ -59,6 +59,22 @@ const getStoreSchema = Joi.object({
 const cancelOrderSchema = Joi.object({
   order_id: Joi.string().uuid().required(),
 });
+const transitionOrderSchema = Joi.object({
+  order_id: Joi.string().uuid().required(),
+  state: Joi.string()
+    .valid(
+      "brand_new",
+      "acknowledged",
+      "picking",
+      "ready_for_pickup",
+      "delivered",
+    )
+    .messages({
+      "any.only":
+        "Invalid state. Allowed: brand_new, acknowledged, picking, ready_for_pickup, delivered.",
+    })
+    .optional(),
+});
 module.exports = {
   userSchema,
   storeSchema,
@@ -69,4 +85,5 @@ module.exports = {
   reserveServiceOptionSchema,
   getStoreSchema,
   cancelOrderSchema,
+  transitionOrderSchema,
 };
