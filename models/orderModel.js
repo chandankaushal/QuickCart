@@ -3,17 +3,19 @@ const pool = require("../db");
 const ORDERS_TABLE = `"quickcart".orders`;
 
 const Order = {
-  async pickupOrder(
+  async create(
     order_id,
+    service_type,
     store_id,
     service_option_hold_id,
     user_id,
     order_total,
     client = null,
   ) {
-    let sql = `INSERT INTO ${ORDERS_TABLE} (id,service_option_hold_id,user_id,store_id,order_total) VALUES ($1,$2,$3,$4,$5)`;
+    let sql = `INSERT INTO ${ORDERS_TABLE} (id,service_type,service_option_hold_id,user_id,store_id,order_total) VALUES ($1,$2,$3,$4,$5,$6)`;
     let params = [
       order_id,
+      service_type,
       service_option_hold_id,
       user_id,
       store_id,
@@ -39,9 +41,9 @@ const Order = {
     return response;
   },
   async transitionStateById(order_id, state, client = null) {
-    let sql = `UPDATE ${ORDERS_TABLE} SET state = '${state}' WHERE id = $1`;
+    let sql = `UPDATE ${ORDERS_TABLE} SET state = $1 WHERE id = $2 AND state <> $3`;
 
-    let params = [order_id];
+    let params = [state, order_id, state];
     if (client) {
       let response = await client.query(sql, params);
       return response;

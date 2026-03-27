@@ -68,10 +68,9 @@ describe("Product Service", () => {
         rows: [{ upc: 123, qty: 10 }], // 456 not found
       });
 
-      const result = await checkProductStock(items, store_id, mockLogger);
-
-      expect(result.problems).toBe(true);
-      expect(result.data).toEqual([{ upc: 456, status: "item_not_found" }]);
+      await expect(
+        checkProductStock(items, store_id, mockLogger),
+      ).rejects.toThrow("UPC 456");
     });
 
     it("should return problems when insufficient stock", async () => {
@@ -82,12 +81,9 @@ describe("Product Service", () => {
         rows: [{ upc: 123, qty: 5 }], // only 5 available, 10 requested
       });
 
-      const result = await checkProductStock(items, store_id, mockLogger);
-
-      expect(result.problems).toBe(true);
-      expect(result.data).toEqual([
-        { upc: 123, status: "insufficient_stock", available: 5, requested: 10 },
-      ]);
+      await expect(
+        checkProductStock(items, store_id, mockLogger),
+      ).rejects.toThrow("UPC 123");
     });
 
     it("should return multiple problems for mixed issues", async () => {
@@ -105,13 +101,9 @@ describe("Product Service", () => {
         ],
       });
 
-      const result = await checkProductStock(items, store_id, mockLogger);
-
-      expect(result.problems).toBe(true);
-      expect(result.data).toEqual([
-        { upc: 222, status: "insufficient_stock", available: 3, requested: 10 },
-        { upc: 333, status: "item_not_found" },
-      ]);
+      await expect(
+        checkProductStock(items, store_id, mockLogger),
+      ).rejects.toThrow("UPC 222,333");
     });
 
     it("should handle single item request successfully", async () => {
@@ -154,8 +146,8 @@ describe("Product Service", () => {
       await checkProductStock(items, store_id, mockLogger);
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        { items: { requested_items: 1 } },
-        "Looking up for Requested Items",
+        { items, store_id },
+        "checking product availabilty",
       );
       expect(mockLogger.info).toHaveBeenCalledWith(
         { items: { found_items: 1 } },
@@ -171,21 +163,9 @@ describe("Product Service", () => {
         rows: [{ upc: 123, qty: 5 }],
       });
 
-      await checkProductStock(items, store_id, mockLogger);
-
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        {
-          OutOfStockItems: [
-            {
-              upc: 123,
-              status: "insufficient_stock",
-              available: 5,
-              requested: 100,
-            },
-          ],
-        },
-        "Out of Stock items",
-      );
+      await expect(
+        checkProductStock(items, store_id, mockLogger),
+      ).rejects.toThrow("UPC 123");
     });
   });
 

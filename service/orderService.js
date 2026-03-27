@@ -1,4 +1,3 @@
-const { Stores } = require("../models/storeModel");
 const { ExpressError } = require("../utils/ExpressError");
 const {
   isServiceOptionHoldValid,
@@ -14,9 +13,9 @@ const withTransaction = require("../utils/withTransaction");
 const OrderItems = require("../models/orderItemsModel");
 const calculateOrderTotal = require("../service/calculateOrderTotal");
 const Product = require("../models/productModel");
-const ORDER_EVENT_TYPES = require("../utils/eventTypes");
 const sendToQueue = require("../queues/sendToQueue");
 const EVENT_GROUP_TYPES = require("../queues/eventGroupTypes");
+const validateStore = require("./validateStore");
 
 async function create_pickup_order(
   order_id,
@@ -24,100 +23,68 @@ async function create_pickup_order(
   service_option_hold_id,
   items,
   user_id,
+  needsWebhook = false,
   log = logger,
 ) {
+  const service_type = "pickup";
   //check if the location is exists
-  const storeId = Number(store_id);
-  if (!Number.isInteger(storeId) || !store_id) {
-    throw new ExpressError("Invalid store id", 400, "INVALID_STORE_ID");
-  }
-  log.info({ order_id, storeId }, "Checking if Store Exists");
-  let storeResponse = await Stores.getStoreById(storeId);
-  if (storeResponse.length === 0) {
-    throw new ExpressError(
-      "No Stores found for this location code",
-      400,
-      "NO_STORES_FOUND",
-    );
-  }
+  await validateStore(store_id, log);
   //check if the hold is not expired
-  log.info(
-    { order_id, storeId, service_option_hold_id },
-    "checking if the hold is not expired",
-  );
+
   await isServiceOptionHoldValid(service_option_hold_id);
 
   //check if the items are available
-  log.info({ items, storeId, order_id }, "checking product availabilty");
-  const isProductAvailable = await checkProductStock(items, storeId);
-  if (isProductAvailable.problems) {
-    throw new ExpressError(
-      `UPC ${isProductAvailable.data.map((el) => el.upc).join(",")}`,
-      400,
-      "ITEM_NOT_FOUND",
-    );
-  }
+
+  await checkProductStock(items, store_id);
+
   //DB Updates
-  let orderResult = await withTransaction(async (client) => {
-    log.info(
-      { service_option_hold_id, order_id, storeId },
-      "Marking hold as expired",
-    );
+  const orderResult = await withTransaction(async (client) => {
     await markServiceOptionHoldTaken(service_option_hold_id, client);
 
     // Subtract the items from Products table
-    log.info({ order_id, items }, "Adjusting Stock");
-    await updateQtyinDb(items, storeId, client);
+    await updateQtyinDb(items, store_id, client, log);
     // Calculate Total
-    const order_total = await calculateOrderTotal(items, storeId, client);
+    const order_total = await calculateOrderTotal(items, store_id, client);
     // put the order in the DB
-    const orderResponse = await Order.pickupOrder(
+    const orderResponse = await Order.create(
       order_id,
-      storeId,
+      service_type,
+      store_id,
       service_option_hold_id,
       user_id,
       order_total,
       client,
     );
     // Put items in the order_items db
-    log.info("Putting items in the Order items DB");
     await OrderItems.addItems(
       {
         order_id: order_id,
         items: items,
-        location_code: storeId,
+        location_code: store_id,
       },
       client,
     );
     let orderObj = {
       id: order_id,
-      service_type: "pickup",
+      service_type: service_type,
       user_id: user_id,
       state: "brand_new",
       service_option_hold_id: service_option_hold_id,
       created_at: new Date().toISOString(),
     };
-    log.info({ order_id }, "Creating order in Order Management System");
-    //Send the Webhook to Queue
-    await sendToQueue(orderObj, EVENT_GROUP_TYPES.ORDER_CREATED);
-
+    if (needsWebhook) {
+      log.info({ order_id }, "Creating order in Order Management System");
+      //Send the Webhook to Queue
+      await sendToQueue(orderObj, EVENT_GROUP_TYPES.ORDER_CREATED);
+    }
+    //To-DO
     // Send Email to the customer with details of the items and the time of pickup
     // we create a new Obj with details and fetch the ETA from the service_option_hold_id
 
     return orderResponse;
   });
 
-  if (orderResult.rowCount == 1 && orderResult.command === "INSERT") {
-    log.info({ order_id }, "Order created");
-
-    return orderResult;
-  } else {
-    throw new ExpressError(
-      "There were some issues creating your order",
-      500,
-      "INTERNAL_SERVER_ERROR",
-    );
-  }
+  return orderResult;
 }
 async function cancel_Order(order_id, source, log = logger) {
   //Check Owner
@@ -141,28 +108,37 @@ async function cancel_Order(order_id, source, log = logger) {
   const items = await OrderItems.getItems(order_id);
 
   if (items.length === 0) {
-    throw new Error("No items found in the order");
+    throw new ExpressError("Something went wrong", 500, "ORDER_CANCEL_FAILED");
   }
   //Build what needs to be added back to the table and add the products back
   let cancelOrderResult = await withTransaction(async (client) => {
-    await Product.addProducts(items, client);
-    //cancel the order
+    // Cancel Order
     log.info({ order_id: order_id }, "Marking the order as canceled");
     let response = await Order.transitionStateById(
       order_id,
       final_state,
       client,
     );
+    if (response.rowCount === 0) {
+      throw new ExpressError(
+        "Order has already cancelled",
+        400,
+        "ORDER_ALREADY_CANCELLED",
+      );
+    }
     log.info({ order_id }, "Order has been cancelled");
+    // Remove from OrderItems
     await OrderItems.deleteOrder(order_id, client);
     log.info({ order_id }, "Removed from Order Items DB");
+    // Restock
+    await Product.addProducts(items, client);
     if (source === "OMS") {
       log.info({ order_id }, "Cancelled from OMS no need for webhook");
       return response;
     }
     // Move this to Queue
     await sendToQueue(
-      { order_id, state: final_state },
+      { id: order_id, state: final_state },
       EVENT_GROUP_TYPES.ORDER_UPDATED,
     );
     return response;

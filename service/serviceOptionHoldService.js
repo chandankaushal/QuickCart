@@ -3,6 +3,7 @@ const { ExpressError } = require("../utils/ExpressError");
 const logger = require("../utils/logger");
 
 async function isServiceOptionHoldValid(id, log = logger) {
+  log.info("checking if the hold is not expired");
   let { expires_at } = await ServiceOptionHold.holdById(id);
 
   if (!expires_at) {
@@ -28,6 +29,7 @@ async function isServiceOptionHoldValid(id, log = logger) {
 }
 
 async function markServiceOptionHoldTaken(id, client = null, log = logger) {
+  log.info({ service_option_hold_id: id }, "Marking hold as expired");
   let response = await ServiceOptionHold.updateServiceOptionHold(id, client);
 
   if (response.rowCount === 0) {

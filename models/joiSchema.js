@@ -44,6 +44,7 @@ const orderSchema = Joi.object({
     .required(),
   location_code: Joi.number().integer().required(),
   service_option_hold_id: Joi.number().integer().required(),
+  needsWebhook: Joi.boolean().optional(),
 });
 
 const getServiceOptionSchema = Joi.object({
@@ -58,10 +59,19 @@ const getStoreSchema = Joi.object({
 });
 const cancelOrderSchema = Joi.object({
   order_id: Joi.string().uuid().required(),
+  source: Joi.string().valid("OMS").optional(),
 });
 const transitionOrderSchema = Joi.object({
   order_id: Joi.string().uuid().required(),
   state: Joi.string()
+    .trim()
+    .lowercase()
+    .custom((value, helpers) => {
+      if (value === "cancelled") {
+        return helpers.error("state.cancelled");
+      }
+      return value;
+    }, "cancelled route guidance")
     .valid(
       "brand_new",
       "acknowledged",
@@ -70,6 +80,7 @@ const transitionOrderSchema = Joi.object({
       "delivered",
     )
     .messages({
+      "state.cancelled": "For cancelled state, use /orders/cancel endpoint.",
       "any.only":
         "Invalid state. Allowed: brand_new, acknowledged, picking, ready_for_pickup, delivered.",
     })

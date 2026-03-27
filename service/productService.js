@@ -2,12 +2,8 @@ const { ExpressError } = require("../utils/ExpressError");
 const Product = require("../models/productModel");
 const logger = require("../utils/logger");
 async function checkProductStock(items, store_id, log = logger) {
-  log.info(
-    { items: { requested_items: items.length } },
-    `Looking up for Requested Items`,
-  );
+  log.info({ items, store_id }, "checking product availabilty");
   let upcs = items.map((item) => item.upc);
-
   let { rows: availableItems } = await Product.getProductByUpc(upcs, store_id);
 
   if (availableItems.length === 0) {
@@ -58,15 +54,20 @@ async function checkProductStock(items, store_id, log = logger) {
     };
   });
 
-  let OutOfStockItems = stockChecks.filter((el) => el.status !== "ok");
-  if (OutOfStockItems.length > 0) {
-    log.info({ OutOfStockItems }, `Out of Stock items`);
-    return { data: OutOfStockItems, problems: true };
+  let outOfStockItems = stockChecks.filter((el) => el.status !== "ok");
+  if (outOfStockItems.length > 0) {
+    log.info({ outOfStockItems }, `Out of Stock items`);
+    throw new ExpressError(
+      `UPC ${outOfStockItems.map((el) => el.upc).join(",")}`,
+      400,
+      "ITEM_NOT_FOUND",
+    );
   }
   return { data: stockChecks, problems: false };
 }
 
-async function updateQtyinDb(items, store_id, client = null) {
+async function updateQtyinDb(items, store_id, client = null, log = logger) {
+  log.info({ items }, "Adjusting Stock");
   let { rowCount: products_updated } = await Product.batchUpdateProductQty(
     items,
     store_id,
