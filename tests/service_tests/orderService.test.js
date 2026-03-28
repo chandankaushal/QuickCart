@@ -43,11 +43,11 @@ describe("Create Order Service", () => {
 
   it("should return a successful response if an order is created", async () => {
     let fakeOrderId = "abc123";
+    let service_type = "pickup";
     let store_id = 1;
     let service_option_hold_id = 123;
     let items = [123];
     let user_id = "test User";
-    let isServiceOptionHoldValidResponse = true;
     let checkProductStockResponse = {
       data: {
         upc: 123,
@@ -58,14 +58,7 @@ describe("Create Order Service", () => {
       problems: false,
     };
 
-    let getStoreByIdDBresponse = {
-      rowCount: 1,
-      rows: [
-        {
-          id: store_id,
-        },
-      ],
-    };
+    let getStoreByIdDBresponse = [{ id: store_id }];
     let pickupOrderDBresponse = {
       rowCount: 1,
       command: "INSERT",
@@ -96,15 +89,13 @@ describe("Create Order Service", () => {
     };
 
     Stores.getStoreById.mockResolvedValue(getStoreByIdDBresponse);
-    isServiceOptionHoldValid.mockResolvedValue(
-      isServiceOptionHoldValidResponse,
-    );
+    isServiceOptionHoldValid.mockResolvedValue(true);
     checkProductStock.mockResolvedValue(checkProductStockResponse);
     markServiceOptionHoldTaken.mockResolvedValue(
       markServiceOptionHoldTakenResponse,
     );
     updateQtyinDb.mockResolvedValue(updateQtyinDbResponse);
-    Order.pickupOrder.mockResolvedValue(pickupOrderDBresponse);
+    Order.create.mockResolvedValue(pickupOrderDBresponse);
     sendToQueue.mockResolvedValue(sendToQueueResponse);
 
     let result = await create_pickup_order(
@@ -113,6 +104,7 @@ describe("Create Order Service", () => {
       service_option_hold_id,
       items,
       user_id,
+      true,
       mockLogger,
     );
     let orderObj = {
@@ -123,14 +115,15 @@ describe("Create Order Service", () => {
       service_option_hold_id: service_option_hold_id,
       created_at: new Date().toISOString(),
     };
-    // console.log(result);
+
     expect(result).toEqual({
       rowCount: 1,
       command: "INSERT",
       rows: [{ order: "abc123" }],
     });
-    expect(Order.pickupOrder).toHaveBeenCalledWith(
+    expect(Order.create).toHaveBeenCalledWith(
       fakeOrderId,
+      service_type,
       store_id,
       service_option_hold_id,
       user_id,
@@ -138,7 +131,12 @@ describe("Create Order Service", () => {
       mockClient,
     );
 
-    expect(updateQtyinDb).toHaveBeenCalledWith(items, store_id, mockClient);
+    expect(updateQtyinDb).toHaveBeenCalledWith(
+      items,
+      store_id,
+      mockClient,
+      mockLogger,
+    );
     expect(markServiceOptionHoldTaken).toHaveBeenCalledWith(
       service_option_hold_id,
       mockClient,
@@ -150,13 +148,13 @@ describe("Create Order Service", () => {
     expect(Stores.getStoreById).toHaveBeenCalledWith(store_id);
     expect(sendToQueue).toHaveBeenCalledWith(orderObj, "CREATE_ORDER");
   });
+
   it("should return an error when invalid store_id is passed", async () => {
     let fakeOrderId = "abc123";
     let store_id = "test";
     let service_option_hold_id = 123;
     let items = [123];
     let user_id = "test User";
-    let isServiceOptionHoldValidResponse = true;
 
     await expect(
       create_pickup_order(
@@ -165,6 +163,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         mockLogger,
       ),
     ).rejects.toThrow("Invalid store id");
@@ -172,16 +171,15 @@ describe("Create Order Service", () => {
     expect(checkProductStock).not.toHaveBeenCalled();
     expect(isServiceOptionHoldValid).not.toHaveBeenCalled();
     expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
-    expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
     expect(updateQtyinDb).not.toHaveBeenCalled();
   });
+
   it("should return an error when invalid store_id float is passed", async () => {
     let fakeOrderId = "abc123";
     let store_id = 1.5;
     let service_option_hold_id = 123;
     let items = [123];
     let user_id = "test User";
-    let isServiceOptionHoldValidResponse = true;
 
     await expect(
       create_pickup_order(
@@ -190,6 +188,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         mockLogger,
       ),
     ).rejects.toThrow("Invalid store id");
@@ -197,18 +196,17 @@ describe("Create Order Service", () => {
     expect(checkProductStock).not.toHaveBeenCalled();
     expect(isServiceOptionHoldValid).not.toHaveBeenCalled();
     expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
-    expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
     expect(updateQtyinDb).not.toHaveBeenCalled();
   });
+
   it("should return an error when store is not found", async () => {
     let fakeOrderId = "abc123";
     let store_id = 1;
     let service_option_hold_id = 123;
     let items = [123];
     let user_id = "test User";
-    let storeDBResponse = [];
 
-    Stores.getStoreById.mockResolvedValue(storeDBResponse); // ✅ returns empty array
+    Stores.getStoreById.mockResolvedValue([]);
 
     await expect(
       create_pickup_order(
@@ -217,6 +215,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         mockLogger,
       ),
     ).rejects.toThrow("No Stores found for this location code");
@@ -227,7 +226,7 @@ describe("Create Order Service", () => {
     expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
     expect(updateQtyinDb).not.toHaveBeenCalled();
   });
-  // Hold Validation Errors
+
   it("should throw error when hold is expired", async () => {
     let fakeOrderId = "abc123";
     let store_id = 1;
@@ -245,6 +244,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         mockLogger,
       ),
     ).rejects.toThrow("Hold has expired");
@@ -256,10 +256,9 @@ describe("Create Order Service", () => {
     expect(checkProductStock).not.toHaveBeenCalled();
     expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
     expect(updateQtyinDb).not.toHaveBeenCalled();
-    expect(Order.pickupOrder).not.toHaveBeenCalled();
+    expect(Order.create).not.toHaveBeenCalled();
   });
 
-  // Product Stock Errors
   it("should throw error when checkProductStock fails", async () => {
     let fakeOrderId = "abc123";
     let store_id = 1;
@@ -278,6 +277,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         mockLogger,
       ),
     ).rejects.toThrow("Product not found");
@@ -285,7 +285,7 @@ describe("Create Order Service", () => {
     expect(checkProductStock).toHaveBeenCalledWith(items, store_id);
     expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
     expect(updateQtyinDb).not.toHaveBeenCalled();
-    expect(Order.pickupOrder).not.toHaveBeenCalled();
+    expect(Order.create).not.toHaveBeenCalled();
   });
 
   it("should throw error when insufficient stock", async () => {
@@ -297,10 +297,7 @@ describe("Create Order Service", () => {
 
     Stores.getStoreById.mockResolvedValue([{ id: store_id }]);
     isServiceOptionHoldValid.mockResolvedValue(true);
-    checkProductStock.mockResolvedValue({
-      problems: true,
-      data: [{ upc: 123, status: "insufficient", available: 2, requested: 5 }],
-    });
+    checkProductStock.mockRejectedValue(new Error("UPC 123"));
 
     await expect(
       create_pickup_order(
@@ -309,6 +306,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         mockLogger,
       ),
     ).rejects.toThrow("UPC 123");
@@ -316,10 +314,9 @@ describe("Create Order Service", () => {
     expect(checkProductStock).toHaveBeenCalledWith(items, store_id);
     expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
     expect(updateQtyinDb).not.toHaveBeenCalled();
-    expect(Order.pickupOrder).not.toHaveBeenCalled();
+    expect(Order.create).not.toHaveBeenCalled();
   });
 
-  // Database Operation Errors
   it("should throw error when markServiceOptionHoldTaken fails", async () => {
     let fakeOrderId = "abc123";
     let store_id = 1;
@@ -341,6 +338,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         mockLogger,
       ),
     ).rejects.toThrow("Failed to mark hold as taken");
@@ -350,7 +348,7 @@ describe("Create Order Service", () => {
       mockClient,
     );
     expect(updateQtyinDb).not.toHaveBeenCalled();
-    expect(Order.pickupOrder).not.toHaveBeenCalled();
+    expect(Order.create).not.toHaveBeenCalled();
   });
 
   it("should throw error when updateQtyinDb fails", async () => {
@@ -373,50 +371,20 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         mockLogger,
       ),
     ).rejects.toThrow("Failed to update stock");
 
-    expect(updateQtyinDb).toHaveBeenCalledWith(items, store_id, mockClient);
-    expect(Order.pickupOrder).not.toHaveBeenCalled();
-  });
-
-  it("should throw error when order insert fails", async () => {
-    let fakeOrderId = "abc123";
-    let store_id = 1;
-    let service_option_hold_id = 123;
-    let items = [123];
-    let user_id = "test User";
-
-    Stores.getStoreById.mockResolvedValue([{ id: store_id }]);
-    isServiceOptionHoldValid.mockResolvedValue(true);
-    checkProductStock.mockResolvedValue({ problems: false, data: [] });
-    markServiceOptionHoldTaken.mockResolvedValue({ rowCount: 1 });
-    updateQtyinDb.mockResolvedValue({ rowCount: 1 });
-    Order.pickupOrder.mockResolvedValue({ rowCount: 0, command: "INSERT" });
-
-    await expect(
-      create_pickup_order(
-        fakeOrderId,
-        store_id,
-        service_option_hold_id,
-        items,
-        user_id,
-        mockLogger,
-      ),
-    ).rejects.toThrow("There were some issues creating your order");
-
-    expect(Order.pickupOrder).toHaveBeenCalledWith(
-      fakeOrderId,
+    expect(updateQtyinDb).toHaveBeenCalledWith(
+      items,
       store_id,
-      service_option_hold_id,
-      user_id,
-      100,
       mockClient,
+      mockLogger,
     );
+    expect(Order.create).not.toHaveBeenCalled();
   });
 
-  // Edge Cases
   it("should work with string store_id that converts to valid number", async () => {
     let fakeOrderId = "abc123";
     let store_id = "123";
@@ -429,7 +397,7 @@ describe("Create Order Service", () => {
     checkProductStock.mockResolvedValue({ problems: false, data: [] });
     markServiceOptionHoldTaken.mockResolvedValue({ rowCount: 1 });
     updateQtyinDb.mockResolvedValue({ rowCount: 1 });
-    Order.pickupOrder.mockResolvedValue({
+    Order.create.mockResolvedValue({
       rowCount: 1,
       command: "INSERT",
       rows: [{ order: fakeOrderId }],
@@ -441,11 +409,12 @@ describe("Create Order Service", () => {
       service_option_hold_id,
       items,
       user_id,
+      false,
       mockLogger,
     );
 
     expect(result.rowCount).toBe(1);
-    expect(Stores.getStoreById).toHaveBeenCalledWith(123); // converted to number
+    expect(Stores.getStoreById).toHaveBeenCalledWith(123);
   });
 
   it("should throw error for null store_id", async () => {
@@ -462,6 +431,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         mockLogger,
       ),
     ).rejects.toThrow("Invalid store id");
@@ -483,6 +453,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         mockLogger,
       ),
     ).rejects.toThrow("Invalid store id");

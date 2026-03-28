@@ -9,21 +9,22 @@ describe("Order Model", () => {
   jest.clearAllMocks();
 });
 
-describe("pickupOrder", () => {
+describe("create", () => {
   it("should insert a new pickup order", async () => {
     const mockResponse = { rowCount: 1 };
     pool.query.mockResolvedValue(mockResponse);
 
-    const result = await Order.pickupOrder(
+    const result = await Order.create(
       "order-123",
+      "pickup",
       "store-456",
       "hold-789",
-      "user-001"
+      "user-001",
     );
 
     expect(pool.query).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO"),
-      ["order-123", "hold-789", "user-001", "store-456"]
+      ["order-123", "pickup", "hold-789", "user-001", "store-456"],
     );
     expect(result.rowCount).toBe(1);
   });
@@ -32,12 +33,12 @@ describe("pickupOrder", () => {
     const mockResponse = { rowCount: 1 };
     pool.query.mockResolvedValue(mockResponse);
 
-    const result = await Order.pickupOrder(
+    const result = await Order.create(
       "order-123",
       "store-456",
       "hold-789",
       "user-001",
-      null
+      null,
     );
 
     expect(pool.query).toHaveBeenCalled();
@@ -48,7 +49,7 @@ describe("pickupOrder", () => {
     pool.query.mockRejectedValue(new Error("Database insert failed"));
 
     await expect(
-      Order.pickupOrder("order-123", "store-456", "hold-789", "user-001")
+      Order.create("order-123", "store-456", "hold-789", "user-001"),
     ).rejects.toThrow("Database insert failed");
   });
 
@@ -56,7 +57,7 @@ describe("pickupOrder", () => {
     pool.query.mockRejectedValue(new Error("duplicate key value"));
 
     await expect(
-      Order.pickupOrder("order-123", "store-456", "hold-789", "user-001")
+      Order.create("order-123", "store-456", "hold-789", "user-001"),
     ).rejects.toThrow("duplicate key value");
   });
 });

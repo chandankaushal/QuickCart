@@ -6,7 +6,8 @@ const { sendSuccess } = require("../utils/apiResponse");
 const { transitionOrderService } = require("../service/transitionOrder");
 
 async function createPickupOrder(req, res) {
-  let { order_id, location_code, service_option_hold_id, items } = req.body;
+  let { order_id, location_code, service_option_hold_id, items, needsWebhook } =
+    req.body;
   let user_id = req.user.id;
   let response = await create_pickup_order(
     order_id,
@@ -14,6 +15,7 @@ async function createPickupOrder(req, res) {
     service_option_hold_id,
     items,
     user_id,
+    needsWebhook,
     req.log,
   );
   if (response) {
@@ -38,7 +40,7 @@ async function transitionOrder(req, res) {
 async function cancelOrder(req, res) {
   const { order_id, source = null } = req.body;
 
-  let response = await cancel_Order(order_id, source, req.log);
+  await cancel_Order(order_id, source, req.log);
   sendSuccess(res, "Order Cancelled Successfully", { order_id }, 200);
 }
 

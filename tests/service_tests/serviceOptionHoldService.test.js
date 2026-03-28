@@ -59,7 +59,7 @@ describe("Service Option Hold Tests", () => {
       "Service option hold not found",
     );
 
-    expect(mockLogger.info).not.toHaveBeenCalled();
+    expect(mockLogger.info).toHaveBeenCalled();
   });
 
   it("should throw ExpressError with correct status code when hold not found", async () => {
