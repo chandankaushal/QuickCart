@@ -50,6 +50,9 @@ const orderSchema = Joi.object({
 const getServiceOptionSchema = Joi.object({
   store_id: Joi.number().integer().required(),
 });
+const getOrderSchema = Joi.object({
+  order_id: Joi.string().uuid().required(),
+});
 const reserveServiceOptionSchema = Joi.object({
   service_option_id: Joi.number().integer().required(),
 });
@@ -97,4 +100,5 @@ module.exports = {
   getStoreSchema,
   cancelOrderSchema,
   transitionOrderSchema,
+  getOrderSchema,
 };
