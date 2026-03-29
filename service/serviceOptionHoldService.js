@@ -7,14 +7,15 @@ const logger = require("../utils/logger");
 
 async function isServiceOptionHoldValid(id, log = logger) {
   log.info("checking if the hold is not expired");
-  let { expires_at } = await ServiceOptionHold.holdById(id);
+  let result = await ServiceOptionHold.holdById(id);
 
-  if (!expires_at) {
+  if (!result || !result.expires_at) {
     throw new ServiceOptionHoldNotFoundError();
   }
-  log.info({ service_option_hold_id: id }, "Service Option Hold is valid");
 
-  const expiresAt = new Date(expires_at);
+  log.info({ service_option_hold_id: id }, "Service Option Hold is in the DB");
+
+  const expiresAt = new Date(result.expires_at);
   const now = new Date();
 
   if (now > expiresAt) {

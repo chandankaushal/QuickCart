@@ -14,7 +14,7 @@ function errorHandler(err, req, res, next) {
   const isExpressError = err instanceof ExpressError;
 
   const status = isExpressError ? err.statusCode : 500;
-  const message = err.message ? err.message : "SERVER ERROR"; // Remains same for all errors
+  const message = err.message ? err.message : "Something went"; // Remains same for all errors
   const code = isExpressError ? err.code : "INTERNAL_ERROR";
 
   logger.error(
@@ -29,7 +29,7 @@ function errorHandler(err, req, res, next) {
       statusCode: status,
       stack: err.stack,
     },
-    message
+    message,
   );
 
   res.status(status).json({ status: "error", message, code });
