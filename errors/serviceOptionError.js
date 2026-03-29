@@ -20,7 +20,7 @@ class ServiceOptionHoldExpiredError extends ExpressError {
 
 class ServiceOptionNotFoundError extends ExpressError {
   constructor() {
-    super("No service Options for this store", 400, "NOT_FOUND");
+    super("No service Options for this store", 400, "NO_SERVICE_OPTIONS");
   }
 }
 
