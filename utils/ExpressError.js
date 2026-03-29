@@ -30,11 +30,16 @@ class InternalServerError extends ExpressError {
     super("Internal Server Error", 500, "INTERNAL_SERVER_ERROR");
   }
 }
-
+class RateLimitError extends ExpressError {
+  constructor() {
+    super("Too Many Requests", 429, "RATE_LIMIT");
+  }
+}
 module.exports = {
   ExpressError,
   UnauthorizedError,
   NotFoundError,
   ForbiddenError,
   InternalServerError,
+  RateLimitError,
 };

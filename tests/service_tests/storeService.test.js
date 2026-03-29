@@ -40,7 +40,7 @@ describe("store Service", () => {
     };
     Stores.getStoresByZip.mockResolvedValue(fakeDbResponse);
     await expect(getStores(fakeZip, fakeStreet, mockLogger)).rejects.toThrow(
-      "No stores found"
+      "No stores found",
     );
   });
 });

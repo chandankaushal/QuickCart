@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 const pool = require("../db");
-const { ExpressError } = require("../utils/ExpressError");
+const { InternalServerError } = require("../utils/ExpressError");
 const logger = require("../utils/logger");
 async function checkDbHealth(req, res) {
   try {
@@ -12,11 +12,7 @@ async function checkDbHealth(req, res) {
     res.status(200).json({ status: "success", message: result.rows[0].now });
   } catch (err) {
     logger.warn({ err: err }, "Issues connecting to DB");
-    throw new ExpressError(
-      "There was an issue connecting to DB",
-      500,
-      "DB_CONNECTION_ERROR",
-    );
+    throw new InternalServerError();
   }
 }
 

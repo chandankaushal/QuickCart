@@ -19,9 +19,15 @@ class InvalidVerificationTokenError extends ExpressError {
     super("The verification token is invalid.", 400, "INCORRECT_TOKEN");
   }
 }
+class InvalidEmailError extends ExpressError {
+  constructor() {
+    super("The provided email is not valid", 400, "INVALID_EMAIL");
+  }
+}
 
 module.exports = {
   NoUserExistsError,
   UserNotActiveError,
   InvalidVerificationTokenError,
+  InvalidEmailError,
 };

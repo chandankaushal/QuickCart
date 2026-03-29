@@ -3,7 +3,6 @@ const {
   ServiceOptionHoldExpiredError,
 } = require("../errors/serviceOptionError");
 const ServiceOptionHold = require("../models/serviceOptionsHoldModel");
-const { ExpressError } = require("../utils/ExpressError");
 const logger = require("../utils/logger");
 
 async function isServiceOptionHoldValid(id, log = logger) {

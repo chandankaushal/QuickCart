@@ -23,11 +23,12 @@ const {
   NoUserExistsError,
   UserNotActiveError,
   InvalidVerificationTokenError,
+  InvalidEmailError,
 } = require("../errors/userErrors");
 
 async function getUserByEmail(email, user_id, log = logger) {
   if (!user_id) {
-    throw new ExpressError("No User ID", 400, "NO_USER_ID");
+    throw new NoUserExistsError();
   }
   log.info({ email }, "Validating Email");
   let isValid = validateEmail(email);
@@ -38,18 +39,10 @@ async function getUserByEmail(email, user_id, log = logger) {
       log.info(`Found User`, response.rows[0].id);
       return response;
     } else {
-      throw new ExpressError(
-        "The requested user does not exist or you do not have the permission to access them",
-        400,
-        "NO_USER_FOUND",
-      );
+      throw new NoUserExistsError();
     }
   } else {
-    throw new ExpressError(
-      "The provided email is not valid",
-      400,
-      "INVALID_EMAIL",
-    );
+    throw new InvalidEmailError();
   }
 }
 
