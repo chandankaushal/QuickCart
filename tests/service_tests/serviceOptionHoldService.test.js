@@ -84,7 +84,7 @@ describe("Service Option Hold Tests", () => {
     try {
       await isServiceOptionHoldValid(id, mockLogger);
     } catch (error) {
-      expect(error.statusCode).toBe(400);
+      expect(error.statusCode).toBe(404);
       expect(error.code).toBe("SERVICE_OPTIONS_HOLD_EXPIRED");
     }
   });
@@ -143,7 +143,7 @@ describe("markServiceOptionHoldTaken", () => {
     ServiceOptionHold.updateServiceOptionHold.mockResolvedValue(mockResponse);
 
     await expect(markServiceOptionHoldTaken(id)).rejects.toThrow(
-      "Service Option Hold not found. Please try again later",
+      "Service option hold not found",
     );
   });
 
@@ -155,8 +155,8 @@ describe("markServiceOptionHoldTaken", () => {
     try {
       await markServiceOptionHoldTaken(id);
     } catch (error) {
-      expect(error.statusCode).toBe(400);
-      expect(error.code).toBe("NOT_FOUND");
+      expect(error.statusCode).toBe(404);
+      expect(error.code).toBe("SERVICE_OPTION_HOLD_NOT_FOUND");
     }
   });
 

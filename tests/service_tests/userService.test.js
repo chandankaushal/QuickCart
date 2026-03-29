@@ -102,7 +102,7 @@ describe("loginUser function", () => {
 
     await expect(
       loginUser(testEmail, testPassword, mockLogger),
-    ).rejects.toThrow("User with this email does not exist");
+    ).rejects.toThrow("User not Found");
   });
   it("should throw an error when the password is not correct", async () => {
     const fakeDbResponse = {
@@ -124,7 +124,7 @@ describe("loginUser function", () => {
 
     await expect(
       loginUser(testEmail, testPassword, mockLogger),
-    ).rejects.toThrow("Please check your credentials");
+    ).rejects.toThrow("Invalid Token");
   });
 });
 

@@ -166,7 +166,7 @@ describe("Create Order Service", () => {
         false,
         mockLogger,
       ),
-    ).rejects.toThrow("Invalid store id");
+    ).rejects.toThrow("No stores found");
 
     expect(checkProductStock).not.toHaveBeenCalled();
     expect(isServiceOptionHoldValid).not.toHaveBeenCalled();
@@ -191,7 +191,7 @@ describe("Create Order Service", () => {
         false,
         mockLogger,
       ),
-    ).rejects.toThrow("Invalid store id");
+    ).rejects.toThrow("No stores found");
 
     expect(checkProductStock).not.toHaveBeenCalled();
     expect(isServiceOptionHoldValid).not.toHaveBeenCalled();
@@ -218,7 +218,7 @@ describe("Create Order Service", () => {
         false,
         mockLogger,
       ),
-    ).rejects.toThrow("No Stores found for this location code");
+    ).rejects.toThrow("No stores found");
 
     expect(Stores.getStoreById).toHaveBeenCalledWith(store_id);
     expect(checkProductStock).not.toHaveBeenCalled();
@@ -434,7 +434,7 @@ describe("Create Order Service", () => {
         false,
         mockLogger,
       ),
-    ).rejects.toThrow("Invalid store id");
+    ).rejects.toThrow("No stores found");
 
     expect(Stores.getStoreById).not.toHaveBeenCalled();
   });
@@ -456,7 +456,7 @@ describe("Create Order Service", () => {
         false,
         mockLogger,
       ),
-    ).rejects.toThrow("Invalid store id");
+    ).rejects.toThrow("No stores found");
 
     expect(Stores.getStoreById).not.toHaveBeenCalled();
   });

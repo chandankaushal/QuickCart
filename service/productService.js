@@ -1,17 +1,17 @@
-const { ExpressError } = require("../utils/ExpressError");
+const { InternalServerError } = require("../utils/ExpressError");
 const Product = require("../models/productModel");
 const logger = require("../utils/logger");
+const {
+  AllItemsNotFoundError,
+  ItemNotFoundError,
+} = require("../errors/itemErrors");
 async function checkProductStock(items, store_id, log = logger) {
   log.info({ items, store_id }, "checking product availabilty");
   let upcs = items.map((item) => item.upc);
   let { rows: availableItems } = await Product.getProductByUpc(upcs, store_id);
 
   if (availableItems.length === 0) {
-    throw new ExpressError(
-      "None of the items you requested are available",
-      400,
-      "ITEM_NOT_FOUND",
-    );
+    throw new AllItemsNotFoundError();
   }
   log.info(
     {
@@ -57,10 +57,8 @@ async function checkProductStock(items, store_id, log = logger) {
   let outOfStockItems = stockChecks.filter((el) => el.status !== "ok");
   if (outOfStockItems.length > 0) {
     log.info({ outOfStockItems }, `Out of Stock items`);
-    throw new ExpressError(
-      `UPC ${outOfStockItems.map((el) => el.upc).join(",")}`,
-      400,
-      "ITEM_NOT_FOUND",
+    throw new ItemNotFoundError(
+      `UPC ${outOfStockItems.map((el) => el.upc).join(",")} is not available`,
     );
   }
   return { data: stockChecks, problems: false };
@@ -74,7 +72,7 @@ async function updateQtyinDb(items, store_id, client = null, log = logger) {
     client,
   );
   if (products_updated === 0) {
-    throw new ExpressError("Nothing was updated in the DB", 400, "NO_UPDATE");
+    throw new InternalServerError();
   }
   return products_updated;
 }

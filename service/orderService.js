@@ -1,4 +1,8 @@
-const { ExpressError } = require("../utils/ExpressError");
+const { NotFoundError } = require("../utils/ExpressError");
+const {
+  OrderAlreadyCancelledError,
+  OrderNotFoundError,
+} = require("../errors/orderErrors");
 const {
   isServiceOptionHoldValid,
   markServiceOptionHoldTaken,
@@ -87,20 +91,15 @@ async function create_pickup_order(
   return orderResult;
 }
 async function cancel_Order(order_id, source, log = logger) {
-  //Check Owner
   //Only cancel Order if state is not cancelled
   const final_state = "cancelled";
   const { rows, rowCount } = await Order.getStateById(order_id);
   if (rowCount === 0) {
-    throw new ExpressError("Order does not exist", 400, "NO_ORDER");
+    throw new OrderNotFoundError();
   }
   const current_state = rows[0].state;
   if (current_state === final_state) {
-    throw new ExpressError(
-      "Order is already cancelled",
-      400,
-      "ORDER_ALREADY_CANCELLED",
-    );
+    throw new OrderAlreadyCancelledError();
   }
 
   // Figure out what is in the order
@@ -108,7 +107,7 @@ async function cancel_Order(order_id, source, log = logger) {
   const items = await OrderItems.getItems(order_id);
 
   if (items.length === 0) {
-    throw new ExpressError("Something went wrong", 500, "ORDER_CANCEL_FAILED");
+    throw new Error();
   }
   //Build what needs to be added back to the table and add the products back
   let cancelOrderResult = await withTransaction(async (client) => {
@@ -120,11 +119,7 @@ async function cancel_Order(order_id, source, log = logger) {
       client,
     );
     if (response.rowCount === 0) {
-      throw new ExpressError(
-        "Order has already cancelled",
-        400,
-        "ORDER_ALREADY_CANCELLED",
-      );
+      throw new OrderAlreadyCancelledError();
     }
     log.info({ order_id }, "Order has been cancelled");
     // Remove from OrderItems
@@ -146,4 +141,12 @@ async function cancel_Order(order_id, source, log = logger) {
   return cancelOrderResult;
 }
 
-module.exports = { create_pickup_order, cancel_Order };
+async function get_order(order_id) {
+  const response = await Order.getById(order_id);
+  if (response.length === 0) {
+    throw new OrderNotFoundError();
+  }
+  return response;
+}
+
+module.exports = { create_pickup_order, cancel_Order, get_order };

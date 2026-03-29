@@ -113,7 +113,7 @@ describe("Reserve Service Options", () => {
 
     await expect(
       reserveServiceOption(fakeServiceOptionId, fakeUserId, mockLogger)
-    ).rejects.toThrow("Please check the serviceOption ID");
+    ).rejects.toThrow("No service Options for this store");
     expect(ServiceOptions.reserveServiceOption).not.toHaveBeenCalled();
   });
   it("should throw an error if there the service option is not available", async () => {
@@ -159,9 +159,7 @@ describe("Reserve Service Options", () => {
 
     await expect(
       reserveServiceOption(fakeServiceOptionId, fakeUserId, mockLogger)
-    ).rejects.toThrow(
-      "There was an error in reserving this service option. Please try another one"
-    );
+    ).rejects.toThrow("Internal Server Error");
     expect(ServiceOptions.reserveServiceOption).toHaveBeenCalledWith(
       fakeServiceOptionId,
       fakeUserId

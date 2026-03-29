@@ -1,7 +1,10 @@
 const Order = require("../models/orderModel");
 const sendToQueue = require("../queues/sendToQueue");
 const ORDER_STATES = require("../utils/eventTypes");
-const { ExpressError } = require("../utils/ExpressError");
+const {
+  OrderAlreadyCancelledError,
+  OrderAlreadyDeliveredError,
+} = require("../errors/orderErrors");
 const logger = require("../utils/logger");
 const withTransaction = require("../utils/withTransaction");
 const EVENT_GROUP_TYPES = require("../queues/eventGroupTypes");
@@ -18,17 +21,9 @@ async function transitionOrderService(
   let current_state = rows[0].state;
   log.info(`Current State ${current_state}`);
   if (current_state === "delivered") {
-    throw new ExpressError(
-      "Order is already delivered",
-      400,
-      "ORDER_ALREADY_DELIVERED",
-    );
+    throw new OrderAlreadyDeliveredError();
   } else if (current_state === "cancelled") {
-    throw new ExpressError(
-      "Order is already cancelled",
-      400,
-      "ORDER_ALREADY_CANCELLED",
-    );
+    throw new OrderAlreadyCancelledError();
   }
   let idx = ORDER_STATES.ORDER_STATES.indexOf(current_state);
   let next_state;

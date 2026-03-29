@@ -1,7 +1,7 @@
 const { validateEmail } = require("../utils/validEmail");
 const User = require("../models/userModel");
 const jwt_token = require("../models/jwtTokenModel");
-const { ExpressError } = require("../utils/ExpressError");
+const { ExpressError, UnauthorizedError } = require("../utils/ExpressError");
 const { comparePassword, hashPassword } = require("../utils/hash");
 const {
   getToken,
@@ -19,6 +19,11 @@ const {
   buildSignupEmailBody,
 } = require("../utils/emailTemplates");
 const sendToQueue = require("../queues/sendToQueue");
+const {
+  NoUserExistsError,
+  UserNotActiveError,
+  InvalidVerificationTokenError,
+} = require("../errors/userErrors");
 
 async function getUserByEmail(email, user_id, log = logger) {
   if (!user_id) {
@@ -52,11 +57,7 @@ async function loginUser(email, password, log = logger) {
   log.info("Getting User by Email");
   const response = await User.getPasswordByEmail(email);
   if (response.rowCount === 0) {
-    throw new ExpressError(
-      "User with this email does not exist",
-      400,
-      "NO_USER_EXISTS",
-    );
+    throw new NoUserExistsError();
   }
   log.info("Comparing Passwords");
   let result = await comparePassword(password, response.rows[0].password);
@@ -64,11 +65,7 @@ async function loginUser(email, password, log = logger) {
     const { rows: isActive } = await User.isUserActive(email);
     if (!isActive[0].verified) {
       log.warn("User is not active");
-      throw new ExpressError(
-        "Please activate the user using the link in your email",
-        400,
-        "USER_NOT_ACTIVATED",
-      );
+      throw new UserNotActiveError();
     }
     let userObj = {
       id: response.rows[0].id,
@@ -92,11 +89,7 @@ async function loginUser(email, password, log = logger) {
 
     return { access_token: access_token, refresh_token: refresh_token };
   } else {
-    throw new ExpressError(
-      "Please check your credentials",
-      401,
-      "UNAUTHORIZED",
-    );
+    throw new UnauthorizedError();
   }
 }
 
@@ -160,11 +153,7 @@ async function email_verify_token(token_id, log = logger) {
 
     if (token.length === 0) {
       log.warn(`${token_id} is incorrect or does not exist in the DB`);
-      throw new ExpressError(
-        "The verification token is invalid.",
-        400,
-        "INCORRECT_TOKEN",
-      );
+      throw new InvalidVerificationTokenError();
     }
 
     await User.verifyUser(token[0].user_id, client);
