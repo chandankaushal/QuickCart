@@ -4,13 +4,15 @@ const {
   createPickupOrder,
   transitionOrder,
   cancelOrder,
+  getOrder,
 } = require("../controllers/orderController");
 const wrapAsync = require("../utils/wrapAsync");
-const { checkValidToken, checkOwner } = require("../middleware/auth");
+const { checkValidToken, checkOrderOwner } = require("../middleware/auth");
 const {
   orderSchema,
   cancelOrderSchema,
   transitionOrderSchema,
+  getOrderSchema,
 } = require("../models/joiSchema");
 const { validateBody } = require("../middleware/validate");
 
@@ -24,15 +26,22 @@ router.post(
   "/cancel",
   validateBody(cancelOrderSchema),
   checkValidToken,
-  checkOwner,
+  checkOrderOwner,
   wrapAsync(cancelOrder),
 ); // Cancel Order
 router.post(
   "/transition_order",
   validateBody(transitionOrderSchema),
   checkValidToken,
-  checkOwner,
+  checkOrderOwner,
   wrapAsync(transitionOrder),
+);
+router.post(
+  "/getOrder",
+  validateBody(getOrderSchema),
+  checkValidToken,
+  checkOrderOwner,
+  wrapAsync(getOrder),
 );
 
 module.exports = router;

@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const { ExpressError, UnauthorizedError } = require("../utils/ExpressError");
+const { ExpressError } = require("../utils/ExpressError");
 const jwt_token = require("../models/jwtTokenModel");
 const isOrderOwner = require("../utils/orderOwner");
 
@@ -67,23 +67,26 @@ async function checkValidRefreshToken(req, res, next) {
     );
   }
 }
-async function checkOwner(req, res, next) {
-  if (!req.headers.authorization) {
+
+async function checkOrderOwner(req, res, next) {
+  // check Valid token sets the current user to req.user already
+  if (!req.user) {
     throw new ExpressError("No Token", 401, "UNAUTHORIZED");
   }
-  const token = req.headers.authorization.split(" ")[1];
-  //Decode Token
-  const decoded = jwt.decode(token);
-  const user_id = decoded.id;
-  const role = decoded.role;
-
-  const { order_id } = req.body;
-
+  if (isAdmin(req.user.role)) {
+    return next();
+  }
   //Check if user is owner of that order
-  await isOrderOwner(order_id, user_id, role, req.log);
-
+  await isOrderOwner(req.body.order_id, req.user.id, req.log);
   // if yes then proceed;
-  next();
+  return next();
 }
 
-module.exports = { checkValidToken, checkValidRefreshToken, checkOwner };
+function isAdmin(role) {
+  if (role === "admin") {
+    return true;
+  }
+  return false;
+}
+
+module.exports = { checkValidToken, checkValidRefreshToken, checkOrderOwner };
