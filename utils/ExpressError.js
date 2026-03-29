@@ -25,16 +25,21 @@ class NotFoundError extends ExpressError {
     super("The requested resource does not exist", 404, "NOT_FOUND");
   }
 }
-class OrderAlreadyCancelledError extends ExpressError {
+class InternalServerError extends ExpressError {
   constructor() {
-    super("Order Already Cancelled", 400, "ORDER_ALREADY_CANCELLED");
+    super("Internal Server Error", 500, "INTERNAL_SERVER_ERROR");
   }
 }
-
+class RateLimitError extends ExpressError {
+  constructor() {
+    super("Too Many Requests", 429, "RATE_LIMIT");
+  }
+}
 module.exports = {
   ExpressError,
   UnauthorizedError,
   NotFoundError,
   ForbiddenError,
-  OrderAlreadyCancelledError,
+  InternalServerError,
+  RateLimitError,
 };

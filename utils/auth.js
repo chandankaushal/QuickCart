@@ -2,7 +2,7 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const jwt_token = require("../models/jwtTokenModel");
-const { ExpressError } = require("./ExpressError");
+const { InternalServerError } = require("./ExpressError");
 const logger = require("../utils/logger");
 
 function getToken(user) {
@@ -51,7 +51,7 @@ function refreshToken(user) {
 async function storeTokenInDB(token) {
   const decoded = jwt.decode(token);
   if (!decoded || !decoded.id || !decoded.jti) {
-    throw new Error("Invalid token: missing required fields");
+    throw new InternalServerError();
   }
   const user_id = decoded.id;
   const token_id = decoded.jti;
@@ -79,11 +79,7 @@ async function storeRefreshTokenInDB(token, log = logger) {
         { error, token_id },
         "There was an error with storing token in DB",
       );
-      throw new ExpressError(
-        "There was an error with your request. Please try again later",
-        500,
-        "INTERNAL_SERVER_ERROR",
-      );
+      throw new InternalServerError();
     });
 
   return true;
@@ -92,7 +88,7 @@ async function storeSignUpTokenInDB(token, log = logger, client = null) {
   // console.log("Token Decoded");
   const decoded = jwt.decode(token);
   if (!decoded || !decoded.id || !decoded.jti) {
-    throw new Error("Invalid token: missing required fields");
+    throw new InternalServerError();
   }
   const user_id = decoded.id;
   const token_id = decoded.jti;
@@ -106,11 +102,7 @@ async function storeSignUpTokenInDB(token, log = logger, client = null) {
         { error, token_id },
         "There was an error with storing token in DB",
       );
-      throw new ExpressError(
-        "There was an error with your request. Please try again later",
-        500,
-        "INTERNAL_SERVER_ERROR",
-      );
+      throw new InternalServerError();
     });
 
   return { token_id: token_id, result: true };

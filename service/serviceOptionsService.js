@@ -1,5 +1,9 @@
+const {
+  ServiceOptionNotFoundError,
+  ServiceOptionAlreadyTakenError,
+} = require("../errors/serviceOptionError");
 const ServiceOptions = require("../models/serviceOptionModel");
-const { ExpressError } = require("../utils/ExpressError");
+const { InternalServerError } = require("../utils/ExpressError");
 const logger = require("../utils/logger");
 
 async function getServiceOptions(store_id, log = logger) {
@@ -10,11 +14,7 @@ async function getServiceOptions(store_id, log = logger) {
     "Service Options fetched successfully for the store",
   );
   if (service_options.length === 0) {
-    throw new ExpressError(
-      "No service Options for this store",
-      400,
-      "NOT_FOUND",
-    );
+    throw new ServiceOptionNotFoundError();
   }
   return service_options;
 }
@@ -23,27 +23,15 @@ async function reserveServiceOption(service_option_id, user_id, log = logger) {
   const serviceOptionAvailable =
     await ServiceOptions.serviceOptionAvailableById(service_option_id);
   if (serviceOptionAvailable.length == 0) {
-    throw new ExpressError(
-      "Please check the serviceOption ID",
-      400,
-      "INVALID_SERVICE_OPTION",
-    );
+    throw new ServiceOptionNotFoundError();
   }
   if (!serviceOptionAvailable[0].available) {
-    throw new ExpressError(
-      "This service Option is already taken",
-      400,
-      "SERVICE_OPTION_ALREADY_TAKEN",
-    );
+    throw new ServiceOptionAlreadyTakenError();
   }
   const { rows: service_option_hold_info } =
     await ServiceOptions.reserveServiceOption(service_option_id, user_id);
   if (service_option_hold_info.length === 0) {
-    throw new ExpressError(
-      "There was an error in reserving this service option. Please try another one",
-      500,
-      "SERVICE_OPTION_RESERVED_ERROR",
-    );
+    throw new InternalServerError();
   }
   const { service_option_hold_id } = service_option_hold_info[0];
   log.info(

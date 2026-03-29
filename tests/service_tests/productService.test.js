@@ -198,7 +198,7 @@ describe("Product Service", () => {
       Product.batchUpdateProductQty.mockResolvedValue({ rowCount: 0 });
 
       await expect(updateQtyinDb(items, store_id)).rejects.toThrow(
-        "Nothing was updated in the DB",
+        "Internal Server Error",
       );
     });
 
@@ -236,9 +236,9 @@ describe("Product Service", () => {
         await updateQtyinDb(items, store_id);
         fail("Expected error to be thrown");
       } catch (error) {
-        expect(error.code).toBe("NO_UPDATE");
-        expect(error.statusCode).toBe(400);
-        expect(error.message).toBe("Nothing was updated in the DB");
+        expect(error.code).toBe("INTERNAL_SERVER_ERROR");
+        expect(error.statusCode).toBe(500);
+        expect(error.message).toBe("Internal Server Error");
       }
     });
   });
@@ -254,7 +254,7 @@ describe("Product Service", () => {
         await checkProductStock(items, store_id, mockLogger);
         fail("Expected error to be thrown");
       } catch (error) {
-        expect(error.code).toBe("ITEM_NOT_FOUND");
+        expect(error.code).toBe("ALL_ITEMS_NOT_FOUND_ERROR");
         expect(error.statusCode).toBe(400);
         expect(error.message).toBe(
           "None of the items you requested are available",

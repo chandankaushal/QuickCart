@@ -1,17 +1,13 @@
 const { rateLimit } = require("express-rate-limit");
-const { ExpressError } = require("./ExpressError");
+const { ExpressError, RateLimitError } = require("./ExpressError");
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 100,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  handler: (req, res, next, options) => {
-    res.status(429).json({
-      status: "error",
-      message: "Too many requests",
-      code: "RATE_LIMIT_EXCEEDED",
-    });
+  handler: (req, res, next) => {
+    return next(new RateLimitError());
   },
 });
 

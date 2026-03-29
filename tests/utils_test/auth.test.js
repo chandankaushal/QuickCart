@@ -156,7 +156,7 @@ describe("Auth Utils", () => {
         decoded.jti,
         decoded.id,
         expect.any(Date),
-        expect.any(Date)
+        expect.any(Date),
       );
     });
 
@@ -164,7 +164,7 @@ describe("Auth Utils", () => {
       const invalidToken = "invalid.token.here";
 
       await expect(storeTokenInDB(invalidToken)).rejects.toThrow(
-        "Invalid token: missing required fields"
+        "Internal Server Error",
       );
     });
 
@@ -174,18 +174,18 @@ describe("Auth Utils", () => {
       });
 
       await expect(storeTokenInDB(tokenWithoutId)).rejects.toThrow(
-        "Invalid token: missing required fields"
+        "Internal Server Error",
       );
     });
 
     it("should throw error for token without jti", async () => {
       const tokenWithoutJti = jwt.sign(
         { id: "user-123", email: "test@example.com" },
-        "secret"
+        "secret",
       );
 
       await expect(storeTokenInDB(tokenWithoutJti)).rejects.toThrow(
-        "Invalid token: missing required fields"
+        "Internal Server Error",
       );
     });
 
@@ -214,7 +214,7 @@ describe("Auth Utils", () => {
       const invalidToken = "invalid.token.here";
 
       await expect(
-        storeRefreshTokenInDB(invalidToken, mockLogger)
+        storeRefreshTokenInDB(invalidToken, mockLogger),
       ).rejects.toThrow("Invalid token: missing required fields");
     });
 
@@ -224,7 +224,7 @@ describe("Auth Utils", () => {
       jwt_token.addRefeshToDB.mockRejectedValue(new Error("DB error"));
 
       await expect(storeRefreshTokenInDB(token, mockLogger)).rejects.toThrow(
-        "There was an error with your request. Please try again later"
+        "Internal Server Error",
       );
       expect(mockLogger.warn).toHaveBeenCalled();
     });

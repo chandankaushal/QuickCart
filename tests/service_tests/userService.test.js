@@ -102,7 +102,7 @@ describe("loginUser function", () => {
 
     await expect(
       loginUser(testEmail, testPassword, mockLogger),
-    ).rejects.toThrow("User with this email does not exist");
+    ).rejects.toThrow("User not Found");
   });
   it("should throw an error when the password is not correct", async () => {
     const fakeDbResponse = {
@@ -124,7 +124,7 @@ describe("loginUser function", () => {
 
     await expect(
       loginUser(testEmail, testPassword, mockLogger),
-    ).rejects.toThrow("Please check your credentials");
+    ).rejects.toThrow("Invalid Token");
   });
 });
 
@@ -212,7 +212,7 @@ describe("getUserByEmail", () => {
   it("should throw error when user_id is missing", async () => {
     await expect(
       getUserByEmail("test@test.com", null, mockLogger),
-    ).rejects.toThrow("No User ID");
+    ).rejects.toThrow("User not Found");
   });
 
   it("should throw error when email is invalid", async () => {
@@ -244,9 +244,7 @@ describe("getUserByEmail", () => {
 
     await expect(
       getUserByEmail(testEmail, testUserId, mockLogger),
-    ).rejects.toThrow(
-      "The requested user does not exist or you do not have the permission to access them",
-    );
+    ).rejects.toThrow("User not Found");
     expect(validateEmail).toHaveBeenCalledWith(testEmail);
     expect(User.getByEmail).toHaveBeenCalledWith(testEmail);
   });

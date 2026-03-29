@@ -37,10 +37,7 @@ describe("GET /monitoring/db", () => {
     });
 
     const res = await request(app).get("/monitoring/db").expect(500);
-    expect(res.body).toHaveProperty(
-      "error",
-      "There was an issue connecting to DB"
-    );
-    expect(res.body.message).toEqual("There was an issue connecting to DB");
+    expect(res.body).toHaveProperty("error", "Internal Server Error");
+    expect(res.body.message).toEqual("Internal Server Error");
   });
 });
