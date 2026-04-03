@@ -145,6 +145,7 @@ describe("Create Order Service", () => {
     expect(isServiceOptionHoldValid).toHaveBeenCalledWith(
       service_option_hold_id,
       store_id,
+      user_id,
       mockLogger,
     );
     expect(Stores.getStoreById).toHaveBeenCalledWith(store_id);
@@ -255,6 +256,7 @@ describe("Create Order Service", () => {
     expect(isServiceOptionHoldValid).toHaveBeenCalledWith(
       service_option_hold_id,
       store_id,
+      user_id,
       mockLogger,
     );
     expect(checkProductStock).not.toHaveBeenCalled();
