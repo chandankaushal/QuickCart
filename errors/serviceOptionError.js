@@ -10,11 +10,7 @@ class ServiceOptionHoldNotFoundError extends ExpressError {
 }
 class ServiceOptionHoldExpiredError extends ExpressError {
   constructor() {
-    super(
-      "Service Options hold is expired",
-      404,
-      "SERVICE_OPTIONS_HOLD_EXPIRED",
-    );
+    super("Service Option hold is expired", 400, "SERVICE_OPTION_HOLD_EXPIRED");
   }
 }
 
@@ -34,9 +30,20 @@ class ServiceOptionAlreadyTakenError extends ExpressError {
   }
 }
 
+class ServiceOptionNotFromSameStoreError extends ExpressError {
+  constructor() {
+    super(
+      "This service Option does not belong to this store. Please reselect the Service Option",
+      400,
+      "SERVICE_OPTION_NOT_FROM_SAME_STORE",
+    );
+  }
+}
+
 module.exports = {
   ServiceOptionHoldNotFoundError,
   ServiceOptionHoldExpiredError,
   ServiceOptionNotFoundError,
   ServiceOptionAlreadyTakenError,
+  ServiceOptionNotFromSameStoreError,
 };
