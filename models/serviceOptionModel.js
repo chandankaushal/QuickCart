@@ -28,9 +28,21 @@ const ServiceOptions = {
     const updateServiceOptionsHoldvalue = [service_option_id, user_id];
     const updateServiceOptionsHoldResponse = await pool.query(
       updateServiceOptionsHoldsql,
-      updateServiceOptionsHoldvalue
+      updateServiceOptionsHoldvalue,
     );
     return updateServiceOptionsHoldResponse;
+  },
+  async getStoreForServiceOption(service_option_id) {
+    const sql = `SELECT store_id FROM ${service_options_table} WHERE service_option_id = $1`;
+    const values = [service_option_id];
+    const result = await pool.query(sql, values);
+    return result.rows;
+  },
+  async releaseServiceOption(service_option_id) {
+    const sql = `UPDATE ${service_options_table} SET available = $1 WHERE service_option_id = $2 AND available = $3`;
+    const values = [true, service_option_id, false];
+    const result = await pool.query(sql, values);
+    return result;
   },
 };
 
