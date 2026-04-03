@@ -62,7 +62,7 @@ const getStoreSchema = Joi.object({
 });
 const cancelOrderSchema = Joi.object({
   order_id: Joi.string().uuid().required(),
-  source: Joi.string().valid("OMS").optional(),
+  needsWebhook: Joi.boolean().optional().default(false),
 });
 const transitionOrderSchema = Joi.object({
   order_id: Joi.string().uuid().required(),
