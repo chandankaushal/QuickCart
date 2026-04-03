@@ -5,3 +5,5 @@ coverage/
 .dockerignore
 quickcart.yaml
 workers/
+datadog.yaml
+datadog-agent-config.yaml
