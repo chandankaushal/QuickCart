@@ -139,6 +139,20 @@ npm test
 - `POST /orders/cancel` (requires bearer token + owner check)
 - `POST /orders/transition_order` (requires bearer token + owner check)
 
+For `POST /orders/cancel`, request body supports:
+
+- `order_id` (required UUID)
+- `needsWebhook` (optional boolean, default `false`)
+
+Example request body:
+
+```json
+{
+  "order_id": "7f6c2ea4-8a86-4a9b-b4b1-2dbd7200f6f0",
+  "needsWebhook": true
+}
+```
+
 ## Request Validation
 
 Request schemas are defined in `models/joiSchema.js`.
@@ -171,7 +185,18 @@ For pickup order creation (`create_pickup_order`):
 9. Add order items
 10. Optionally enqueue webhook event when `needsWebhook=true`
 
-Order cancellation and state transitions also use transactions and enqueue OMS update events unless source is `OMS`.
+For order cancellation (`cancel_Order`):
+
+1. Validate order exists and is not already cancelled
+2. Load order items; if missing for an existing order, throw internal server error
+3. Start DB transaction
+4. Transition order state to `cancelled`
+5. Delete order items
+6. Restock products
+7. Commit transaction
+8. Optionally enqueue `ORDER_UPDATED` event when `needsWebhook=true`
+
+Order transitions (`transitionOrder`) continue to use authenticated owner checks and queue OMS update events through the transition service.
 
 ## Queue + Worker Behavior
 

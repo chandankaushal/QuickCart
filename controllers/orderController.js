@@ -39,9 +39,9 @@ async function transitionOrder(req, res) {
   );
 }
 async function cancelOrder(req, res) {
-  const { order_id, source = null } = req.body;
+  const { order_id, needsWebhook = false } = req.body;
 
-  await cancel_Order(order_id, source, req.log);
+  await cancel_Order(order_id, needsWebhook, req.log);
   sendSuccess(res, "Order Cancelled Successfully", { order_id }, 200);
 }
 async function getOrder(req, res) {

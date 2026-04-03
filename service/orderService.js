@@ -19,6 +19,7 @@ const Product = require("../models/productModel");
 const sendToQueue = require("../queues/sendToQueue");
 const EVENT_GROUP_TYPES = require("../queues/eventGroupTypes");
 const validateStore = require("./validateStore");
+const { InternalServerError } = require("../utils/ExpressError");
 
 async function create_pickup_order(
   order_id,
@@ -94,7 +95,7 @@ async function create_pickup_order(
 
   return orderResult;
 }
-async function cancel_Order(order_id, source, log = logger) {
+async function cancel_Order(order_id, needsWebhook, log = logger) {
   //Only cancel Order if state is not cancelled
   const final_state = "cancelled";
   const { rows, rowCount } = await Order.getStateById(order_id);
@@ -111,7 +112,8 @@ async function cancel_Order(order_id, source, log = logger) {
   const items = await OrderItems.getItems(order_id);
 
   if (items.length === 0) {
-    throw new Error();
+    log.error({ order_id }, "No items found in the order_items DB");
+    throw new InternalServerError();
   }
   //Build what needs to be added back to the table and add the products back
   let cancelOrderResult = await withTransaction(async (client) => {
@@ -131,17 +133,21 @@ async function cancel_Order(order_id, source, log = logger) {
     log.info({ order_id }, "Removed from Order Items DB");
     // Restock
     await Product.addProducts(items, client);
-    if (source === "OMS") {
-      log.info({ order_id }, "Cancelled from OMS no need for webhook");
-      return response;
-    }
-    // Move this to Queue
-    await sendToQueue(
-      { id: order_id, state: final_state },
-      EVENT_GROUP_TYPES.ORDER_UPDATED,
-    );
+
     return response;
   });
+  if (!needsWebhook) {
+    log.info(
+      { order_id },
+      `needsWebhook is ${needsWebhook}. Skipping sending webhook`,
+    );
+    return cancelOrderResult;
+  }
+  // Move this to Queue
+  await sendToQueue(
+    { id: order_id, state: final_state },
+    EVENT_GROUP_TYPES.ORDER_UPDATED,
+  );
   return cancelOrderResult;
 }
 

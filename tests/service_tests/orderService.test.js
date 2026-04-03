@@ -9,8 +9,12 @@ const {
   checkProductStock,
   updateQtyinDb,
 } = require("../../service/productService");
-const { create_pickup_order } = require("../../service/orderService");
+const {
+  create_pickup_order,
+  cancel_Order,
+} = require("../../service/orderService");
 const withTransaction = require("../../utils/withTransaction");
+const { InternalServerError } = require("../../utils/ExpressError");
 
 const mockLogger = {
   info: jest.fn(),
@@ -18,6 +22,7 @@ const mockLogger = {
 };
 
 const OrderItems = require("../../models/orderItemsModel");
+const Product = require("../../models/productModel");
 const calculateOrderTotal = require("../../service/calculateOrderTotal");
 const sendToQueue = require("../../queues/sendToQueue");
 
@@ -27,6 +32,7 @@ jest.mock("../../service/serviceOptionHoldService");
 jest.mock("../../service/productService");
 jest.mock("../../utils/withTransaction");
 jest.mock("../../models/orderItemsModel");
+jest.mock("../../models/productModel");
 jest.mock("../../service/calculateOrderTotal");
 jest.mock("../../queues/sendToQueue");
 const mockClient = {};
@@ -465,5 +471,106 @@ describe("Create Order Service", () => {
     ).rejects.toThrow("No stores found");
 
     expect(Stores.getStoreById).not.toHaveBeenCalled();
+  });
+});
+
+describe("Cancel Order Service", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    withTransaction.mockImplementation(async (callback) => {
+      return await callback(mockClient);
+    });
+  });
+
+  it("should cancel order and skip webhook when needsWebhook is false", async () => {
+    const order_id = "abc123";
+    const items = [{ upc: 123, qty: 1 }];
+    const transitionResponse = { rowCount: 1 };
+
+    Order.getStateById.mockResolvedValue({
+      rowCount: 1,
+      rows: [{ state: "brand_new" }],
+    });
+    OrderItems.getItems.mockResolvedValue(items);
+    Order.transitionStateById.mockResolvedValue(transitionResponse);
+    OrderItems.deleteOrder.mockResolvedValue({ rowCount: 1 });
+    Product.addProducts.mockResolvedValue({ rowCount: 1 });
+
+    const result = await cancel_Order(order_id, false, mockLogger);
+
+    expect(result).toEqual(transitionResponse);
+    expect(sendToQueue).not.toHaveBeenCalled();
+    expect(Order.transitionStateById).toHaveBeenCalledWith(
+      order_id,
+      "cancelled",
+      mockClient,
+    );
+  });
+
+  it("should cancel order and send webhook when needsWebhook is true", async () => {
+    const order_id = "abc123";
+    const items = [{ upc: 123, qty: 1 }];
+    const transitionResponse = { rowCount: 1 };
+
+    Order.getStateById.mockResolvedValue({
+      rowCount: 1,
+      rows: [{ state: "brand_new" }],
+    });
+    OrderItems.getItems.mockResolvedValue(items);
+    Order.transitionStateById.mockResolvedValue(transitionResponse);
+    OrderItems.deleteOrder.mockResolvedValue({ rowCount: 1 });
+    Product.addProducts.mockResolvedValue({ rowCount: 1 });
+    sendToQueue.mockResolvedValue({ messageId: "queue-1" });
+
+    const result = await cancel_Order(order_id, true, mockLogger);
+
+    expect(result).toEqual(transitionResponse);
+    expect(sendToQueue).toHaveBeenCalledWith(
+      { id: order_id, state: "cancelled" },
+      "UPDATE_ORDER",
+    );
+  });
+
+  it("should throw OrderNotFoundError when order does not exist", async () => {
+    const order_id = "abc123";
+    Order.getStateById.mockResolvedValue({ rowCount: 0, rows: [] });
+
+    await expect(cancel_Order(order_id, false, mockLogger)).rejects.toThrow(
+      "Order Not Found",
+    );
+
+    expect(OrderItems.getItems).not.toHaveBeenCalled();
+    expect(sendToQueue).not.toHaveBeenCalled();
+  });
+
+  it("should throw OrderAlreadyCancelledError when order is already cancelled", async () => {
+    const order_id = "abc123";
+    Order.getStateById.mockResolvedValue({
+      rowCount: 1,
+      rows: [{ state: "cancelled" }],
+    });
+
+    await expect(cancel_Order(order_id, false, mockLogger)).rejects.toThrow(
+      "Order Already Cancelled",
+    );
+
+    expect(OrderItems.getItems).not.toHaveBeenCalled();
+    expect(sendToQueue).not.toHaveBeenCalled();
+  });
+
+  it("should throw InternalServerError when order has no items", async () => {
+    const order_id = "abc123";
+    Order.getStateById.mockResolvedValue({
+      rowCount: 1,
+      rows: [{ state: "brand_new" }],
+    });
+    OrderItems.getItems.mockResolvedValue([]);
+
+    await expect(
+      cancel_Order(order_id, false, mockLogger),
+    ).rejects.toBeInstanceOf(InternalServerError);
+
+    expect(mockLogger.error).toHaveBeenCalled();
+    expect(sendToQueue).not.toHaveBeenCalled();
   });
 });
