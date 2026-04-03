@@ -3,6 +3,12 @@ const service_options_table = `"quickcart".service_options`;
 const service_options_hold_table = `"quickcart".service_options_holds`;
 
 const ServiceOptions = {
+  async getById(service_option_id) {
+    let sql = `SELECT * FROM ${service_options_table} WHERE service_option_id = $1`;
+    let value = [service_option_id];
+    let { rows } = await pool.query(sql, value);
+    return rows;
+  },
   async getServiceOptions(store_id) {
     let sql = `SELECT * FROM ${service_options_table} WHERE store_id = $1 AND available=$2`;
     let values = [store_id, true];

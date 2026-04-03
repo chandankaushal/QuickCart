@@ -34,7 +34,12 @@ async function create_pickup_order(
   await validateStore(store_id, log);
   //check if the hold is not expired
 
-  await isServiceOptionHoldValid(service_option_hold_id, store_id, log);
+  await isServiceOptionHoldValid(
+    service_option_hold_id,
+    store_id,
+    user_id,
+    log,
+  );
 
   //check if the items are available
 

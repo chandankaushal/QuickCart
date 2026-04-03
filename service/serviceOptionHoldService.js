@@ -6,9 +6,10 @@ const {
 } = require("../errors/serviceOptionError");
 const ServiceOptions = require("../models/serviceOptionModel");
 const ServiceOptionHold = require("../models/serviceOptionsHoldModel");
+const isServiceOptionHoldOwner = require("../utils/isServiceOptionHoldOwner");
 const logger = require("../utils/logger");
 
-async function isServiceOptionHoldValid(id, store_id, log = logger) {
+async function isServiceOptionHoldValid(id, store_id, user_id, log = logger) {
   log.info("checking if the hold is not expired");
 
   let result = await ServiceOptionHold.holdById(id);
@@ -42,6 +43,11 @@ async function isServiceOptionHoldValid(id, store_id, log = logger) {
     // throw Error
     throw new ServiceOptionNotFromSameStoreError();
   }
+  log.info(
+    { service_option_hold_id: id },
+    "Checking if the hold was made by the same user",
+  );
+  await isServiceOptionHoldOwner(result.user_id, user_id);
 
   return true;
 }
