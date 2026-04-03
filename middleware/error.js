@@ -32,6 +32,12 @@ function errorHandler(err, req, res, next) {
     message,
   );
 
+  if (err.status >= 500) {
+    return res
+      .status(status)
+      .json({ status: "error", message, code: "INTERNAL_SERVER_ERROR" });
+  }
+
   res.status(status).json({ status: "error", message, code });
 }
 
