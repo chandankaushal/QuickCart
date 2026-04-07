@@ -1,3 +1,4 @@
+const { default: axios, get } = require("axios");
 const pool = require("../db");
 const {
   getUserByEmail,
@@ -59,6 +60,7 @@ async function updateUser(req, res) {
 }
 
 async function login(req, res) {
+  // console.log(req);
   let { email, password } = req.body;
   req.log.info({ email }, "Login attempt started");
   const response = await loginUser(email, password, req.log);
@@ -93,6 +95,30 @@ async function emailVerify(req, res) {
   // if token exists and is valid then we set the verify flag in users table to true.
 }
 
+async function authorizeUser(req, res) {
+  res.send(`
+    <html>
+      <body>
+        <h2>Login to continue</h2>
+        <form method="POST" action="/users/getToken">
+          <input name="email" placeholder="Email" />
+          <input name="password" type="password" placeholder="Password" />
+          <button type="submit">Login</button>
+        </form>
+      </body>
+    </html>
+  `);
+}
+async function getToken(req, res) {
+  let { email, password } = req.body;
+
+  const response = await axios.post("http://localhost:3000/users/login", {
+    email: email,
+    password: password,
+  });
+  res.send(response.data);
+}
+
 module.exports = {
   getUsers,
   signupUser,
@@ -101,4 +127,6 @@ module.exports = {
   login,
   refreshToken,
   emailVerify,
+  authorizeUser,
+  getToken,
 };

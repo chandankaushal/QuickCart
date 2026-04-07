@@ -57,7 +57,12 @@ const reserveServiceOptionSchema = Joi.object({
   service_option_id: Joi.number().integer().required(),
 });
 const getStoreSchema = Joi.object({
-  zip_code: Joi.number().integer().required(),
+  zip_code: Joi.string()
+    .pattern(/^\d{5}(-\d{4})?$/)
+    .required()
+    .messages({
+      "string.pattern.base": "Zip code must be in ##### or #####-#### format.",
+    }),
   street: Joi.string().optional(),
 });
 const cancelOrderSchema = Joi.object({

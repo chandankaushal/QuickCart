@@ -20,6 +20,7 @@ const cookieParser = require("cookie-parser");
 const limiter = require("./utils/rate-limit.js");
 
 const app = express();
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(pinoMiddleware);
 app.use(cookieParser());
