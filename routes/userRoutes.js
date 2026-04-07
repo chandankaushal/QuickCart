@@ -8,6 +8,8 @@ const {
   login,
   refreshToken,
   emailVerify,
+  authorizeUser,
+  getToken,
 } = require("../controllers/userController");
 
 const {
@@ -31,7 +33,7 @@ router.get(
   "/show",
   checkValidToken,
   validateQuery(getUserSchema),
-  wrapAsync(getUsers)
+  wrapAsync(getUsers),
 );
 router.post("/register", validateBody(userSchema), wrapAsync(signupUser));
 router.put("/update", wrapAsync(updateUser));
@@ -40,8 +42,9 @@ router.post("/login", validateBody(loginSchema), wrapAsync(login));
 router.post(
   "/refresh",
   wrapAsync(checkValidRefreshToken),
-  wrapAsync(refreshToken)
+  wrapAsync(refreshToken),
 );
 router.get("/email-verify", emailVerify);
-
+router.get("/authorize", authorizeUser);
+router.post("/getToken", getToken);
 module.exports = router;
