@@ -1,0 +1,759 @@
+openapi: 3.0.3
+info:
+  title: QuickCart API
+  version: 1.0.0
+  description: |
+    API documentation for the QuickCart service.
+
+    All successful JSON responses follow the pattern:
+    - status: "success"
+    - optional message
+    - optional data payload (shape depends on endpoint)
+
+    Errors follow:
+    - status: "error"
+    - message: human-readable error description
+    - code: machine-readable error code
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        message:
+          type: string
+          nullable: true
+        data:
+          nullable: true
+      required: [status]
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [error]
+        message:
+          type: string
+        code:
+          type: string
+      required: [status, message, code]
+
+    HealthResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponse"
+        - type: object
+          properties:
+            message:
+              type: string
+              description: Current database/server time or status message.
+
+    UserRegisterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 30
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 4
+      required: [name, email, password]
+
+    UserLoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 4
+      required: [email, password]
+
+    UserAccessTokenResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponse"
+        - type: object
+          properties:
+            data:
+              type: string
+              description: JWT access token.
+
+    UserQueryByEmail:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required: [email]
+
+    UserDeleteRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required: [email]
+
+    Store:
+      type: object
+      properties:
+        STORE_ID:
+          type: integer
+          minimum: 1
+        NAME:
+          type: string
+        RETAILER:
+          type: string
+        CITY:
+          type: string
+        STATE:
+          type: string
+          minLength: 2
+          maxLength: 2
+        zip_code:
+          type: string
+          pattern: '^\\d{5}(-\\d{4})?$'
+        STREET:
+          type: string
+      required: [STORE_ID, NAME, RETAILER, CITY, STATE, zip_code, STREET]
+
+    StoreSearchRequest:
+      type: object
+      properties:
+        zip_code:
+          type: string
+          pattern: '^\\d{5}(-\\d{4})?$'
+        street:
+          type: string
+          nullable: true
+      required: [zip_code]
+
+    StoreSearchResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponse"
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/Store"
+
+    OrderItem:
+      type: object
+      properties:
+        upc:
+          type: integer
+        qty:
+          type: integer
+          minimum: 1
+      required: [upc, qty]
+
+    CreatePickupOrderRequest:
+      type: object
+      properties:
+        order_id:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+          minItems: 1
+        location_code:
+          type: integer
+        service_option_hold_id:
+          type: integer
+        needsWebhook:
+          type: boolean
+      required: [order_id, items, location_code, service_option_hold_id]
+
+    CreatePickupOrderResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                order_id:
+                  type: string
+                  format: uuid
+
+    CancelOrderRequest:
+      type: object
+      properties:
+        order_id:
+          type: string
+          format: uuid
+        needsWebhook:
+          type: boolean
+          default: false
+      required: [order_id]
+
+    TransitionOrderRequest:
+      type: object
+      properties:
+        order_id:
+          type: string
+          format: uuid
+        state:
+          type: string
+          description: >-
+            New order state. Use '/orders/cancel' for cancelled orders.
+          enum:
+            - brand_new
+            - acknowledged
+            - picking
+            - ready_for_pickup
+            - delivered
+      required: [order_id]
+
+    TransitionOrderResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                order_id:
+                  type: string
+                  format: uuid
+                state:
+                  type: string
+
+    GetOrderRequest:
+      type: object
+      properties:
+        order_id:
+          type: string
+          format: uuid
+      required: [order_id]
+
+    ProductAvailabilityRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+          minItems: 1
+        location_code:
+          type: integer
+      required: [items, location_code]
+
+    ServiceOptionsPickupRequest:
+      type: object
+      properties:
+        store_id:
+          type: integer
+      required: [store_id]
+
+    ServiceOptionsReserveRequest:
+      type: object
+      properties:
+        service_option_id:
+          type: integer
+      required: [service_option_id]
+
+paths:
+  /:
+    get:
+      tags: [Root]
+      summary: Root health check
+      description: Returns a simple message indicating the server is running.
+      responses:
+        "200":
+          description: Server is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /monitoring/db:
+    get:
+      tags: [Monitoring]
+      summary: Check database health
+      description: Attempts a simple query against the database and returns the current time if successful.
+      responses:
+        "200":
+          description: Database is reachable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/show:
+    get:
+      tags: [Users]
+      summary: Get user by email
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+            format: email
+          required: true
+          description: Email address of the user to fetch.
+      responses:
+        "200":
+          description: User(s) found
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          description: User record
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/register:
+    post:
+      tags: [Users]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegisterRequest"
+      responses:
+        "200":
+          description: User registered and verification token created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                      data:
+                        type: object
+                        properties:
+                          token_id:
+                            type: string
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/delete:
+    delete:
+      tags: [Users]
+      summary: Delete a user by email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserDeleteRequest"
+      responses:
+        "200":
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/update:
+    put:
+      tags: [Users]
+      summary: Update user (placeholder)
+      description: Currently returns a plain text placeholder response.
+      responses:
+        "200":
+          description: Placeholder response
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /users/login:
+    post:
+      tags: [Users]
+      summary: Log in a user
+      description: >-
+        Logs in a user with email and password. On success, sets a refresh token
+        HTTP-only cookie and returns a JWT access token in the response body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          headers:
+            Set-Cookie:
+              description: HTTP-only refresh_token cookie.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAccessTokenResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/refresh:
+    post:
+      tags: [Users]
+      summary: Refresh access token
+      description: >-
+        Uses the refresh_token cookie to issue a new access token and refresh token.
+      parameters:
+        - in: cookie
+          name: refresh_token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Token refreshed successfully
+          headers:
+            Set-Cookie:
+              description: New HTTP-only refresh_token cookie.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAccessTokenResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/email-verify:
+    get:
+      tags: [Users]
+      summary: Verify email using token
+      parameters:
+        - in: query
+          name: token_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Token verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/authorize:
+    get:
+      tags: [Users]
+      summary: Authorization login form
+      description: Returns an HTML login form that posts to /users/getToken.
+      responses:
+        "200":
+          description: HTML login page
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /users/getToken:
+    post:
+      tags: [Users]
+      summary: Get token via HTML form
+      description: >-
+        Accepts credentials via form or JSON body and proxies to /users/login,
+        returning the login response.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/UserLoginRequest"
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLoginRequest"
+      responses:
+        "200":
+          description: Login response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAccessTokenResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stores/get_stores:
+    post:
+      tags: [Stores]
+      summary: Find stores by location
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreSearchRequest"
+      responses:
+        "200":
+          description: Stores found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreSearchResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /service_options/pickup:
+    post:
+      tags: [ServiceOptions]
+      summary: List pickup service options for a store
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceOptionsPickupRequest"
+      responses:
+        "200":
+          description: Service options listed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /service_options/reserve:
+    post:
+      tags: [ServiceOptions]
+      summary: Reserve a service option
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceOptionsReserveRequest"
+      responses:
+        "200":
+          description: Service option reserved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /products/checkAvailability:
+    post:
+      tags: [Products]
+      summary: Check product availability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductAvailabilityRequest"
+      responses:
+        "200":
+          description: Availability data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/pickup/create_order:
+    post:
+      tags: [Orders]
+      summary: Create a pickup order
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePickupOrderRequest"
+      responses:
+        "200":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePickupOrderResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/cancel:
+    post:
+      tags: [Orders]
+      summary: Cancel an order
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelOrderRequest"
+      responses:
+        "200":
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/transition_order:
+    post:
+      tags: [Orders]
+      summary: Transition an order to a new state
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransitionOrderRequest"
+      responses:
+        "200":
+          description: Order transitioned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransitionOrderResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/getOrder:
+    post:
+      tags: [Orders]
+      summary: Get order details
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GetOrderRequest"
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
