@@ -7,6 +7,8 @@ require("dd-trace").init({
 });
 require("dotenv").config();
 const express = require("express");
+const path = require("path");
+const swaggerUi = require("swagger-ui-express");
 const userRoutes = require("./routes/userRoutes.js");
 const monitoringRoutes = require("./routes/monitoringRoutes.js");
 const storeRoutes = require("./routes/storeRoutes");
@@ -25,6 +27,22 @@ app.use(express.json());
 app.use(pinoMiddleware);
 app.use(cookieParser());
 app.use(limiter);
+
+// Serve the raw OpenAPI spec so Swagger UI can load it
+app.get("/openapi.yaml", (req, res) => {
+  res.sendFile(path.join(__dirname, "openapi.yaml"));
+});
+
+// Swagger UI at /api-docs using the existing OpenAPI YAML
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(null, {
+    swaggerOptions: {
+      url: "/openapi.yaml",
+    },
+  }),
+);
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Server is running ✅" });
