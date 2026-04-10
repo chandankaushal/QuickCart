@@ -28,7 +28,9 @@
     "pino": "^10.1.0",
     "pino-datadog": "^2.0.2",
     "pino-http": "^11.0.0",
-    "postgres": "^3.4.7"
+    "postgres": "^3.4.7",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
