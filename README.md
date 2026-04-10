@@ -95,6 +95,37 @@ node index.js
 node workers/emailWorker.js
 ```
 
+## API Documentation (Swagger / OpenAPI)
+
+This project ships with an OpenAPI 3.0 definition and interactive docs.
+
+- OpenAPI spec file: [openapi.yaml](openapi.yaml)
+
+To view interactive API docs:
+
+1. Start the API server:
+
+```bash
+node index.js
+```
+
+2. Open Swagger UI in your browser:
+
+- URL: `http://localhost:3000/api-docs`
+
+3. Use the **Authorize** button in Swagger UI for protected endpoints:
+
+- Select the `bearerAuth` scheme.
+- Paste your JWT access token (from `/users/login`) as: `Bearer <token>`.
+- After authorizing, all endpoints marked with a lock icon will send the `Authorization: Bearer <token>` header.
+
+The docs are generated directly from [openapi.yaml](openapi.yaml), which defines:
+
+- All routes under `/`, `/monitoring`, `/users`, `/stores`, `/service_options`, `/products`, `/orders`.
+- Request body schemas (aligned with `models/joiSchema.js`).
+- Standard success/error response envelopes.
+- Authentication requirements using the `bearerAuth` security scheme.
+
 ## Scripts
 
 Currently defined in `package.json`:
