@@ -72,6 +72,32 @@ const OrderItems = {
 
     return response;
   },
+  async getSpecificItemsForOrder(item_id, order_id, client = null) {
+    const idsArray = Array.isArray(item_id) ? item_id : [item_id];
+    const ids = idsArray.map((id) => Number(id));
+
+    let sql = `SELECT * FROM ${ORDER_ITEMS_TABLE_NAME} WHERE product_id = ANY($1::bigint[]) AND order_id = $2`;
+    const values = [ids, order_id];
+
+    const runner = client || pool;
+    const response = await runner.query(sql, values);
+    return response.rows;
+  },
+  async deleteSpecificItemsForOrder(item_id, order_id, client = null) {
+    const idsArray = Array.isArray(item_id) ? item_id : [item_id];
+    const ids = idsArray.map((id) => Number(id));
+
+    const sql = `
+    DELETE FROM ${ORDER_ITEMS_TABLE_NAME}
+    WHERE order_id = $1
+      AND product_id = ANY($2::bigint[])
+  `;
+    const values = [order_id, ids];
+
+    const runner = client || pool;
+    const response = await runner.query(sql, values);
+    return response;
+  },
 };
 
 module.exports = OrderItems;
