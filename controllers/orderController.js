@@ -2,6 +2,7 @@ const {
   create_pickup_order,
   cancel_Order,
   get_order,
+  update_order,
 } = require("../service/orderService");
 const { sendSuccess } = require("../utils/apiResponse");
 const { transitionOrderService } = require("../service/transitionOrder");
@@ -48,6 +49,13 @@ async function getOrder(req, res) {
   let { order_id } = req.body;
   const response = await get_order(order_id);
   sendSuccess(res, null, response, 200);
+}
+async function updateOrder(req, res) {
+  let updatePayload = {
+    order_id: req.query.order_id,
+    ...req.body, // service_option_hold_id, items
+  };
+  await update_order(updatePayload);
 }
 
 module.exports = { createPickupOrder, transitionOrder, cancelOrder, getOrder };

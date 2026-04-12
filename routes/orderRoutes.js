@@ -5,6 +5,7 @@ const {
   transitionOrder,
   cancelOrder,
   getOrder,
+  updateOrder,
 } = require("../controllers/orderController");
 const wrapAsync = require("../utils/wrapAsync");
 const { checkValidToken, checkOrderOwner } = require("../middleware/auth");
@@ -43,5 +44,6 @@ router.post(
   checkOrderOwner,
   wrapAsync(getOrder),
 );
+router.put("/updateOrder", updateOrder);
 
 module.exports = router;
