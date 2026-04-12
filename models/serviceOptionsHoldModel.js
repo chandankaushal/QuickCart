@@ -21,12 +21,32 @@ const ServiceOptionHold = {
       let response = await pool.query(sql, params);
       return response;
     }
+  },
+  async getExpiredHolds(client = null) {
+    const date = new Date();
+    const now = new Date();
+    const sql = `SELECT * FROM ${service_options_hold_table} WHERE expires_at <= $1 AND is_option_taken = $2`;
+    const values = [now, false];
 
-    // const response = client
-    //   ? await client.query(sql, params)
-    //   : await pool.query(sql, params);
+    if (client) {
+      const response = await client.query(sql, values);
+      return response;
+    }
 
-    //return response;
+    const response = await pool.query(sql, values);
+    return response;
+  },
+  async delete(id, client = null) {
+    const hold_ids = Array.isArray(id) ? id : [id];
+    const sql = `DELETE from ${service_options_hold_table} WHERE is_option_taken = $1 AND service_option_hold_id =  ANY ($2::int[])`;
+    const values = [false, hold_ids];
+    if (client) {
+      const response = await client.query(sql, values);
+      return response;
+    }
+
+    const response = await pool.query(sql, values);
+    return response;
   },
 };
 

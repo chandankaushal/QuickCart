@@ -44,9 +44,16 @@ const ServiceOptions = {
     const result = await pool.query(sql, values);
     return result.rows;
   },
-  async releaseServiceOption(service_option_id) {
-    const sql = `UPDATE ${service_options_table} SET available = $1 WHERE service_option_id = $2 AND available = $3`;
-    const values = [true, service_option_id, false];
+  async releaseServiceOption(service_option_id, client = null) {
+    const ids = Array.isArray(service_option_id)
+      ? service_option_id
+      : [service_option_id];
+    const sql = `UPDATE ${service_options_table} SET available = $1 WHERE service_option_id = ANY($2::int[]) AND available = $3`;
+    const values = [true, ids, false];
+    if (client) {
+      const result = await client.query(sql, values);
+      return result;
+    }
     const result = await pool.query(sql, values);
     return result;
   },
