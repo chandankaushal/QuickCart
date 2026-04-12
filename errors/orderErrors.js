@@ -16,8 +16,19 @@ class OrderAlreadyDeliveredError extends ExpressError {
   }
 }
 
+class CannotModifyOrderError extends ExpressError {
+  constructor() {
+    super(
+      "Order cannot be modified after it's picked",
+      400,
+      "ORDER_UPDATE_ERROR",
+    );
+  }
+}
+
 module.exports = {
   OrderNotFoundError,
   OrderAlreadyCancelledError,
   OrderAlreadyDeliveredError,
+  CannotModifyOrderError,
 };
