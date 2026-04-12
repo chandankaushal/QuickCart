@@ -60,6 +60,14 @@ const Order = {
 
     return response.rows;
   },
+  async UpdateServiceOptionAndTotal(updatePayload) {
+    // (id,service_type,service_option_hold_id,user_id,store_id,order_total)
+    const sql = `UPDATE ${ORDERS_TABLE} SET service_option_hold_id = $1 order_total = $2`;
+    let values = [
+      updatePayload.service_option_hold_id,
+      updatePayload.new_total,
+    ];
+  },
 };
 
 module.exports = Order;
