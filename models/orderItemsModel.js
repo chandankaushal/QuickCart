@@ -26,12 +26,12 @@ const OrderItems = {
     // Adding order_items to Order Items table
 
     //Build first half of insert
-    let preStatement = `INSERT INTO ${ORDER_ITEMS_TABLE_NAME}(id,order_id,product_id,quantity,unit_price) VALUES`;
+    let preStatement = `INSERT INTO ${ORDER_ITEMS_TABLE_NAME}(id,order_id,product_id,quantity,unit_price, upc) VALUES`;
     // Build placeholders
     let placeholders = items
       .map((item, index) => {
-        let base = index * 5;
-        return `($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5})`;
+        let base = index * 6;
+        return `($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6})`;
       })
       .join(",");
     let sql = preStatement + placeholders;
@@ -43,14 +43,24 @@ const OrderItems = {
       params.push(upcToId[item.upc]);
       params.push(item.qty);
       params.push(upcToUnitPrice[item.upc]);
+      params.push(item.upc);
     });
+    console.log(sql);
+    console.log(params);
+    // if (client) {
+    //   const queryResult = await client.query(sql, params);
+    //   return queryResult;
+    // }
+    // const queryResult = await pool.query(sql, params);
+    // return queryResult;
+  },
+  async getAllAboutItems(order_id) {
+    let sql = `SELECT * from ${ORDER_ITEMS_TABLE_NAME} WHERE order_id = $1`;
+    let params = [order_id];
 
-    if (client) {
-      const queryResult = await client.query(sql, params);
-      return queryResult;
-    }
-    const queryResult = await pool.query(sql, params);
-    return queryResult;
+    let { rows: items } = await pool.query(sql, params);
+
+    return items;
   },
   async getItems(order_id) {
     let sql = `SELECT product_id, quantity from ${ORDER_ITEMS_TABLE_NAME} WHERE order_id = $1`;
@@ -99,5 +109,23 @@ const OrderItems = {
     return response;
   },
 };
+
+(async () => {
+  let information = {
+    order_id: "1234",
+    items: [
+      {
+        upc: 222333444555,
+        qty: 2,
+      },
+      {
+        upc: 333444555666,
+        qty: 4,
+      },
+    ],
+    location_code: 2,
+  };
+  await OrderItems.addItems(information);
+})();
 
 module.exports = OrderItems;
