@@ -11,7 +11,7 @@ const OrderItems = {
     //get the upcs
     let upcs = items.map((item) => item.upc);
     //Lookup product id for this upc
-    let response = await Product.getIdByUpc(upcs, location_code);
+    let response = await Product.getIdByUpc(upcs, location_code, client);
 
     let upcToId = {};
     let upcToUnitPrice = {};
@@ -26,7 +26,7 @@ const OrderItems = {
     // Adding order_items to Order Items table
 
     //Build first half of insert
-    let preStatement = `INSERT INTO ${ORDER_ITEMS_TABLE_NAME}(id,order_id,product_id,quantity,unit_price, upc) VALUES`;
+    let preStatement = `INSERT INTO ${ORDER_ITEMS_TABLE_NAME}(id,order_id,product_id,quantity,unit_price, upc) VALUES`; // I think we can remove the product_id and save DB call here.
     // Build placeholders
     let placeholders = items
       .map((item, index) => {
@@ -45,14 +45,9 @@ const OrderItems = {
       params.push(upcToUnitPrice[item.upc]);
       params.push(item.upc);
     });
-    console.log(sql);
-    console.log(params);
-    // if (client) {
-    //   const queryResult = await client.query(sql, params);
-    //   return queryResult;
-    // }
-    // const queryResult = await pool.query(sql, params);
-    // return queryResult;
+    const runner = client || pool;
+    const queryResult = await runner.query(sql, params);
+    return queryResult;
   },
   async getAllAboutItems(order_id) {
     let sql = `SELECT * from ${ORDER_ITEMS_TABLE_NAME} WHERE order_id = $1`;
@@ -62,23 +57,19 @@ const OrderItems = {
 
     return items;
   },
-  async getItems(order_id) {
+  async getItems(order_id, client = null) {
     let sql = `SELECT product_id, quantity from ${ORDER_ITEMS_TABLE_NAME} WHERE order_id = $1`;
     let params = [order_id];
-
-    let { rows: items } = await pool.query(sql, params);
+    let runner = client || pool;
+    let { rows: items } = await runner.query(sql, params);
 
     return items;
   },
-  async deleteOrder(order_id, client) {
+  async deleteOrder(order_id, client = null) {
     let sql = `DELETE FROM ${ORDER_ITEMS_TABLE_NAME} WHERE order_id = $1`;
     let params = [order_id];
-    if (client) {
-      let response = await client.query(sql, params);
-
-      return response;
-    }
-    let response = await pool.query(sql, params);
+    const runner = client || pool;
+    let response = await runner.query(sql, params);
 
     return response;
   },
@@ -108,24 +99,13 @@ const OrderItems = {
     const response = await runner.query(sql, values);
     return response;
   },
+  async getItemsUpc(order_id, client = null) {
+    const sql = `SELET * FROM ${ORDER_ITEMS_TABLE_NAME} WHERE order_id = $1;`;
+    const params = [order_id];
+
+    const runner = client || pool;
+
+    return await runner.query(sql, params);
+  },
 };
-
-(async () => {
-  let information = {
-    order_id: "1234",
-    items: [
-      {
-        upc: 222333444555,
-        qty: 2,
-      },
-      {
-        upc: 333444555666,
-        qty: 4,
-      },
-    ],
-    location_code: 2,
-  };
-  await OrderItems.addItems(information);
-})();
-
 module.exports = OrderItems;
