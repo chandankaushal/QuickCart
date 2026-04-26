@@ -25,10 +25,16 @@ class CannotModifyOrderError extends ExpressError {
     );
   }
 }
+class OrderItemsNotFoundError extends ExpressError {
+  constructor() {
+    super("No Items Found for this order", 400, "ORDER_UPDATE_ERROR");
+  }
+}
 
 module.exports = {
   OrderNotFoundError,
   OrderAlreadyCancelledError,
   OrderAlreadyDeliveredError,
   CannotModifyOrderError,
+  OrderItemsNotFoundError,
 };
