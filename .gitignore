@@ -7,3 +7,4 @@ quickcart.yaml
 workers/
 datadog.yaml
 datadog-agent-config.yaml
+datadog-agent-local.yaml

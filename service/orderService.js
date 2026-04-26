@@ -1,6 +1,7 @@
 const {
   OrderAlreadyCancelledError,
   OrderNotFoundError,
+  CannotModifyOrderError,
 } = require("../errors/orderErrors");
 const {
   isServiceOptionHoldValid,
@@ -20,6 +21,7 @@ const sendToQueue = require("../queues/sendToQueue");
 const EVENT_GROUP_TYPES = require("../queues/eventGroupTypes");
 const validateStore = require("./validateStore");
 const { InternalServerError } = require("../utils/ExpressError");
+const { checkItemUpdate, performUpdates } = require("../utils/checkItemUpdate");
 
 async function create_pickup_order(
   order_id,
@@ -42,12 +44,10 @@ async function create_pickup_order(
     log,
   );
 
-  //check if the items are available
-
-  await checkProductStock(items, store_id);
-
   //DB Updates
   const orderResult = await withTransaction(async (client) => {
+    //check if the items are available
+    await checkProductStock(items, store_id, log, client);
     await markServiceOptionHoldTaken(service_option_hold_id, client);
 
     // Subtract the items from Products table
@@ -159,4 +159,72 @@ async function get_order(order_id) {
   return response;
 }
 
-module.exports = { create_pickup_order, cancel_Order, get_order };
+async function update_order(updatePayload, log = logger) {
+  let response = await Order.getById(updatePayload.order_id);
+
+  if (!response || response.length === 0) {
+    throw new OrderNotFoundError();
+  }
+  let order = response[0];
+  log.info(
+    { order_id: order.id },
+    `Order Found in the DB. Order state is ${order.state}`,
+  );
+
+  if (
+    order.state !== "brand_new" &&
+    order.state !== "acknowledged" &&
+    order.state !== "picking"
+  ) {
+    log.error(`Order state ${order.state} does not allow modification`);
+    throw new CannotModifyOrderError();
+  }
+  //Needs to make sure if the user is passing existing service option then okay, but if its a new one then i have to validate again.
+
+  // if (order.service_option_hold_id != updatePayload.service_option_hold_id) {
+  //   await isServiceOptionHoldValid(
+  //     updatePayload.service_option_hold_id,
+  //     order.store_id,
+  //     order.user_id,
+  //   );
+  //   // TO-DO Need to make sure that order update is not happening after due date.
+  // }
+  //Check if any items are updated.
+  log.info(
+    { order_id: order.id },
+    `Looking up for items in the Order Items in the DB`,
+  );
+  const current_items = await OrderItems.getAllAboutItems(order.id);
+  //This returns directly the rows array.
+  let currentItems = current_items.map((item) => {
+    return {
+      upc: item.upc,
+      qty: item.quantity,
+    };
+  });
+
+  const new_items = updatePayload.items;
+  if (!updatePayload.items || updatePayload.items.length <= 0) {
+    throw new CannotModifyOrderError();
+  }
+  const { isSame, updatedItems } = checkItemUpdate(
+    currentItems,
+    new_items,
+    log,
+  );
+  if (isSame) {
+    log.info({ order_id: order.id }, `Same Items in the update order call.`);
+    return;
+  }
+
+  let result = await performUpdates(
+    updatedItems,
+    order.id,
+    order.store_id,
+    log,
+  ); //Perform the updates.
+
+  return result;
+}
+
+module.exports = { create_pickup_order, cancel_Order, get_order, update_order };

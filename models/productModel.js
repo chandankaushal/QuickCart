@@ -3,23 +3,22 @@ const pool = require("../db");
 const PRODUCT_TABLE = `"quickcart".products`;
 
 const Product = {
-  async getProductByUpc(upc, store_id) {
+  async getProductByUpc(upc, store_id, client = null) {
     const upcArray = Array.isArray(upc) ? upc : [upc]; // if we get single upc then we pass as [upc]
 
-    let sql = `SELECT upc,qty FROM ${PRODUCT_TABLE} WHERE upc = ANY($1::bigint[]) AND store_id = $2`; // Using IN to lookup mutiple products at once
+    let sql = `SELECT upc,qty FROM ${PRODUCT_TABLE} WHERE upc = ANY($1::bigint[]) AND store_id = $2`; //  lookup mutiple products at once
     let values = [upcArray, store_id];
-
-    const result = await pool.query(sql, values);
+    let runner = client || pool;
+    const result = await runner.query(sql, values);
 
     return result;
   },
-  async getIdByUpc(upc, store_id) {
+  async getIdByUpc(upc, store_id, client = null) {
     const upcArray = Array.isArray(upc) ? upc : [upc]; // if we get single upc then we pass as [upc]
-
-    let sql = `SELECT product_id,qty,price_cents,upc FROM ${PRODUCT_TABLE} WHERE upc = ANY($1::bigint[]) AND store_id = $2`; // Using IN to lookup mutiple products at once
+    let sql = `SELECT product_id,qty,price_cents,upc FROM ${PRODUCT_TABLE} WHERE upc = ANY($1::bigint[]) AND store_id = $2`; //lookup mutiple products at once
     let values = [upcArray, store_id];
-
-    const result = await pool.query(sql, values);
+    const runner = client || pool;
+    const result = await runner.query(sql, values);
 
     return result;
   },
@@ -63,11 +62,8 @@ const Product = {
     const upcArray = Array.isArray(upc) ? upc : [upc]; // if we get single upc then we pass as [upc]
     let sql = `SELECT upc,price_cents FROM ${PRODUCT_TABLE} WHERE upc = ANY($1::bigint[]) AND store_id = $2`; // Using IN to lookup mutiple products at once
     let values = [upcArray, store_id];
-    if (client) {
-      const result = await client.query(sql, values);
-      return result;
-    }
-    const result = await pool.query(sql, values);
+    let runner = client || pool;
+    const result = await runner.query(sql, values);
     return result;
   },
   async addProducts(items, client = null) {
@@ -89,14 +85,8 @@ const Product = {
     ]); //Product_id and qty for CASE Statements
     let product_ids = items.map((item) => Number(item.product_id)); // UPC for Where clause
     params.push(product_ids); // Pushing upcs for where clause in params
-    if (client) {
-      let queryResult = await client.query(finalStatement, params);
-
-      return queryResult;
-    }
-    let queryResult = await pool.query(finalStatement, params);
-    console.log("ADDED TO DB");
-    return queryResult;
+    const runner = client || pool;
+    return await runner.query(finalStatement, params);
   },
 };
 

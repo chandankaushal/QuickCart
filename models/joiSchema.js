@@ -94,6 +94,19 @@ const transitionOrderSchema = Joi.object({
     })
     .optional(),
 });
+const updateOrderSchema = Joi.object({
+  order_id: Joi.string().uuid().required(),
+  items: Joi.array()
+    .items(
+      Joi.object({
+        upc: Joi.number().integer().required(),
+        qty: Joi.number().integer().min(1).required(),
+      }),
+    )
+    .min(1)
+    .required(),
+  service_option_hold_id: Joi.number().integer().required(),
+});
 module.exports = {
   userSchema,
   storeSchema,
@@ -106,4 +119,5 @@ module.exports = {
   cancelOrderSchema,
   transitionOrderSchema,
   getOrderSchema,
+  updateOrderSchema,
 };

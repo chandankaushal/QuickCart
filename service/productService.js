@@ -5,10 +5,12 @@ const {
   AllItemsNotFoundError,
   ItemNotFoundError,
 } = require("../errors/itemErrors");
-async function checkProductStock(items, store_id, log = logger) {
+async function checkProductStock(items, store_id, log = logger, client = null) {
   log.info({ items, store_id }, "checking product availabilty");
   let upcs = items.map((item) => item.upc);
-  let { rows: availableItems } = await Product.getProductByUpc(upcs, store_id);
+  let { rows: availableItems } = client
+    ? await Product.getProductByUpc(upcs, store_id, client)
+    : await Product.getProductByUpc(upcs, store_id);
 
   if (availableItems.length === 0) {
     throw new AllItemsNotFoundError();

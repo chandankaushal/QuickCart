@@ -12,9 +12,14 @@ const {
 const {
   create_pickup_order,
   cancel_Order,
+  update_order,
 } = require("../../service/orderService");
 const withTransaction = require("../../utils/withTransaction");
 const { InternalServerError } = require("../../utils/ExpressError");
+const {
+  checkItemUpdate,
+  performUpdates,
+} = require("../../utils/checkItemUpdate");
 
 const mockLogger = {
   info: jest.fn(),
@@ -35,6 +40,7 @@ jest.mock("../../models/orderItemsModel");
 jest.mock("../../models/productModel");
 jest.mock("../../service/calculateOrderTotal");
 jest.mock("../../queues/sendToQueue");
+jest.mock("../../utils/checkItemUpdate");
 const mockClient = {};
 
 describe("Create Order Service", () => {
@@ -147,7 +153,12 @@ describe("Create Order Service", () => {
       service_option_hold_id,
       mockClient,
     );
-    expect(checkProductStock).toHaveBeenCalledWith(items, store_id);
+    expect(checkProductStock).toHaveBeenCalledWith(
+      items,
+      store_id,
+      mockLogger,
+      mockClient,
+    );
     expect(isServiceOptionHoldValid).toHaveBeenCalledWith(
       service_option_hold_id,
       store_id,
@@ -294,7 +305,12 @@ describe("Create Order Service", () => {
       ),
     ).rejects.toThrow("Product not found");
 
-    expect(checkProductStock).toHaveBeenCalledWith(items, store_id);
+    expect(checkProductStock).toHaveBeenCalledWith(
+      items,
+      store_id,
+      mockLogger,
+      mockClient,
+    );
     expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
     expect(updateQtyinDb).not.toHaveBeenCalled();
     expect(Order.create).not.toHaveBeenCalled();
@@ -323,7 +339,12 @@ describe("Create Order Service", () => {
       ),
     ).rejects.toThrow("UPC 123");
 
-    expect(checkProductStock).toHaveBeenCalledWith(items, store_id);
+    expect(checkProductStock).toHaveBeenCalledWith(
+      items,
+      store_id,
+      mockLogger,
+      mockClient,
+    );
     expect(markServiceOptionHoldTaken).not.toHaveBeenCalled();
     expect(updateQtyinDb).not.toHaveBeenCalled();
     expect(Order.create).not.toHaveBeenCalled();
@@ -572,5 +593,153 @@ describe("Cancel Order Service", () => {
 
     expect(mockLogger.error).toHaveBeenCalled();
     expect(sendToQueue).not.toHaveBeenCalled();
+  });
+});
+
+describe("Update Order Service", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should update order items and recalculate total", async () => {
+    const order_id = "abc123";
+    const store_id = 1;
+    const currentItems = [
+      { upc: 123, qty: 2 },
+      { upc: 456, qty: 1 },
+    ];
+    const newItems = [
+      { upc: 123, qty: 3 },
+      { upc: 456, qty: 1 },
+    ];
+    const updatedItems = [{ upc: 123, qty: 3 }];
+    const updateResult = { rowCount: 1 };
+
+    Order.getById.mockResolvedValue([
+      { id: order_id, state: "brand_new", store_id },
+    ]);
+    OrderItems.getAllAboutItems.mockResolvedValue([
+      { upc: 123, quantity: 2 },
+      { upc: 456, quantity: 1 },
+    ]);
+    checkItemUpdate.mockReturnValue({
+      isSame: false,
+      updatedItems,
+    });
+    performUpdates.mockResolvedValue(updateResult);
+
+    const result = await update_order(
+      {
+        order_id,
+        items: newItems,
+        service_option_hold_id: 999,
+      },
+      mockLogger,
+    );
+
+    expect(result).toEqual(updateResult);
+    expect(Order.getById).toHaveBeenCalledWith(order_id);
+    expect(OrderItems.getAllAboutItems).toHaveBeenCalledWith(order_id);
+    expect(checkItemUpdate).toHaveBeenCalledWith(
+      currentItems,
+      newItems,
+      mockLogger,
+    );
+    expect(performUpdates).toHaveBeenCalledWith(
+      updatedItems,
+      order_id,
+      store_id,
+      mockLogger,
+    );
+  });
+
+  it("should return undefined when items are unchanged", async () => {
+    const order_id = "abc123";
+    const store_id = 1;
+    const items = [{ upc: 123, qty: 2 }];
+
+    Order.getById.mockResolvedValue([
+      { id: order_id, state: "brand_new", store_id },
+    ]);
+    OrderItems.getAllAboutItems.mockResolvedValue([{ upc: 123, quantity: 2 }]);
+    checkItemUpdate.mockReturnValue({
+      isSame: true,
+      updatedItems: items,
+    });
+
+    const result = await update_order(
+      {
+        order_id,
+        items,
+      },
+      mockLogger,
+    );
+
+    expect(result).toBeUndefined();
+    expect(performUpdates).not.toHaveBeenCalled();
+  });
+
+  it("should throw CannotModifyOrderError when order state cannot be modified", async () => {
+    const order_id = "abc123";
+
+    Order.getById.mockResolvedValue([
+      { id: order_id, state: "cancelled", store_id: 1 },
+    ]);
+
+    await expect(
+      update_order(
+        {
+          order_id,
+          items: [{ upc: 123, qty: 2 }],
+        },
+        mockLogger,
+      ),
+    ).rejects.toThrow("Order cannot be modified after it's picked");
+
+    expect(OrderItems.getAllAboutItems).not.toHaveBeenCalled();
+    expect(checkItemUpdate).not.toHaveBeenCalled();
+    expect(performUpdates).not.toHaveBeenCalled();
+  });
+
+  it("should throw OrderNotFoundError when order does not exist", async () => {
+    const order_id = "abc123";
+
+    Order.getById.mockResolvedValue([]);
+
+    await expect(
+      update_order(
+        {
+          order_id,
+          items: [{ upc: 123, qty: 2 }],
+        },
+        mockLogger,
+      ),
+    ).rejects.toThrow("Order Not Found");
+
+    expect(OrderItems.getAllAboutItems).not.toHaveBeenCalled();
+    expect(checkItemUpdate).not.toHaveBeenCalled();
+    expect(performUpdates).not.toHaveBeenCalled();
+  });
+
+  it("should throw CannotModifyOrderError when items array is empty", async () => {
+    const order_id = "abc123";
+
+    Order.getById.mockResolvedValue([
+      { id: order_id, state: "brand_new", store_id: 1 },
+    ]);
+
+    await expect(
+      update_order(
+        {
+          order_id,
+          items: [],
+        },
+        mockLogger,
+      ),
+    ).rejects.toThrow("Order cannot be modified after it's picked");
+
+    expect(OrderItems.getAllAboutItems).toHaveBeenCalledWith(order_id);
+    expect(checkItemUpdate).not.toHaveBeenCalled();
+    expect(performUpdates).not.toHaveBeenCalled();
   });
 });

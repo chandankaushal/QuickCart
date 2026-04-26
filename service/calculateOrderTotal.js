@@ -1,10 +1,10 @@
 const Product = require("../models/productModel");
 
-async function calculateOrderTotal(items, store_id) {
+async function calculateOrderTotal(items, store_id, client = null) {
   // get upcs
   let upcs = items.map((item) => item.upc);
   //Lookup Price
-  let response = await Product.getPriceByUpc(upcs, store_id);
+  let response = await Product.getPriceByUpc(upcs, store_id, client);
 
   let upcToPrice = {};
   response.rows.forEach((row) => {

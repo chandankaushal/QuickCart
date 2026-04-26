@@ -2,7 +2,7 @@ const { ExpressError } = require("../utils/ExpressError");
 class ServiceOptionHoldNotFoundError extends ExpressError {
   constructor() {
     super(
-      "Service option hold not found",
+      "Service option hold not found.",
       404,
       "SERVICE_OPTION_HOLD_NOT_FOUND",
     );
