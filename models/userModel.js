@@ -24,14 +24,8 @@ const User = {
   async register(uuid, name, email, hashedPassword, client = null) {
     const sql = `INSERT INTO ${user_table} (id,name,email,password) VALUES ($1,$2,$3,$4)`;
     const values = [uuid, name, email, hashedPassword];
-    if (client) {
-      // console.log("using client");
-      let response = await client.query(sql, values);
-      return response;
-    } else {
-      let response = await pool.query(sql, values);
-      return response;
-    }
+    const runner = client || pool;
+    return await runner.query(sql, values);
   },
 
   async deleteUser(email) {
@@ -52,17 +46,10 @@ const User = {
     return response;
   },
   async verifyUser(id, client = null) {
-    if (client) {
-      let sql = `UPDATE ${user_table} SET verified = true WHERE id = $1 AND verified = false`;
-      let values = [id];
-      let response = await client.query(sql, values);
-      return response;
-    } else {
-      let sql = `UPDATE ${user_table} SET verified = true WHERE id = $1 AND verified = false`;
-      let values = [id];
-      let response = await pool.query(sql, values);
-      return response;
-    }
+    let sql = `UPDATE ${user_table} SET verified = true WHERE id = $1 AND verified = false`;
+    let values = [id];
+    const runner = client || pool;
+    return await runner.query(sql, values);
   },
 };
 

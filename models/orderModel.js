@@ -21,36 +21,21 @@ const Order = {
       store_id,
       order_total,
     ];
-    if (client) {
-      let response = await client.query(sql, params);
-      return response;
-    } else {
-      let response = await pool.query(sql, params);
-      return response;
-    }
+    const runner = client || pool;
+    return await runner.query(sql, params);
   },
   async getStateById(order_id, client = null) {
     let sql = `SELECT state FROM ${ORDERS_TABLE} WHERE id = $1`;
     let params = [order_id];
-    if (client) {
-      let response = await client.query(sql, params);
-      return response;
-    }
-
-    let response = await pool.query(sql, params);
-    return response;
+    const runner = client || pool;
+    return await runner.query(sql, params);
   },
   async transitionStateById(order_id, state, client = null) {
     let sql = `UPDATE ${ORDERS_TABLE} SET state = $1 WHERE id = $2 AND state <> $3`;
 
     let params = [state, order_id, state];
-    if (client) {
-      let response = await client.query(sql, params);
-      return response;
-    }
-
-    let response = await pool.query(sql, params);
-    return response;
+    const runner = client || pool;
+    return await runner.query(sql, params);
   },
   async getById(order_id) {
     let sql = `SELECT * FROM ${ORDERS_TABLE} WHERE id = $1`;

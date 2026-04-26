@@ -44,26 +44,14 @@ const jwt_token = {
   ) {
     const sql = `INSERT INTO ${SIGNUP_TOKENS_DB} (token_id,user_id,issue_time,expires_in) VALUES ($1,$2,$3,$4)`;
     const values = [token_id, user_id, issue_time, expires_at];
-    if (client) {
-      const response = await client.query(sql, values);
-      // throw new Error("Error");
-      return response;
-    }
-    const response = await pool.query(sql, values);
-    return response;
+    const runner = client || pool;
+    return await runner.query(sql, values);
   },
   async deleteSignupTokenFromDb(id, client = null) {
-    if (client) {
-      const sql = `DELETE FROM ${SIGNUP_TOKENS_DB} WHERE token_id =$1`;
-      const values = [id];
-      const response = await client.query(sql, values);
-      return response;
-    } else {
-      const sql = `DELETE FROM ${SIGNUP_TOKENS_DB} WHERE token_id =$1`;
-      const values = [id];
-      const response = await pool.query(sql, values);
-      return response;
-    }
+    const sql = `DELETE FROM ${SIGNUP_TOKENS_DB} WHERE token_id =$1`;
+    const values = [id];
+    const runner = client || pool;
+    return await runner.query(sql, values);
   },
   async getSignupTokenFromDB(id) {
     let sql = `SELECT * FROM ${SIGNUP_TOKENS_DB} WHERE token_id = $1`;

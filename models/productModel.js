@@ -40,21 +40,8 @@ const Product = {
 
     params.push(upcs); // Pushing upcs for where clause in params
     params.push(store_id); // pushing store_id as param
-
-    if (client) {
-      // console.log("Updating Products with client");
-      let queryResult = await client.query(finalStatement, params);
-      return queryResult;
-    } else {
-      // console.log("Updating Products with Pool");
-      let queryResult = await pool.query(finalStatement, params);
-      return queryResult;
-    }
-
-    // let queryResult = client
-    //   ? await client.query(finalStatement, params)
-    //   : await pool.query(finalStatement, params);
-    // return queryResult;
+    const runner = client || pool;
+    return await runner.query(finalStatement, params);
   },
   async createNewProduct() {},
   async DeleteProduct() {},

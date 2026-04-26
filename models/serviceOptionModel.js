@@ -50,12 +50,8 @@ const ServiceOptions = {
       : [service_option_id];
     const sql = `UPDATE ${service_options_table} SET available = $1 WHERE service_option_id = ANY($2::int[]) AND available = $3`;
     const values = [true, ids, false];
-    if (client) {
-      const result = await client.query(sql, values);
-      return result;
-    }
-    const result = await pool.query(sql, values);
-    return result;
+    const runner = client || pool;
+    return await runner.query(sql, values);
   },
 };
 
