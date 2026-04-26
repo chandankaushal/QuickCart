@@ -52,10 +52,17 @@ async function getOrder(req, res) {
 }
 async function updateOrder(req, res) {
   let updatePayload = {
-    order_id: req.query.order_id,
-    ...req.body, // service_option_hold_id, items
+    ...req.body, // order_id, items, service_option_hold
   };
-  await update_order(updatePayload);
+  let response = await update_order(updatePayload, req.log);
+
+  sendSuccess(res, "Order Updated Successfully", updatePayload.order_id, 200);
 }
 
-module.exports = { createPickupOrder, transitionOrder, cancelOrder, getOrder };
+module.exports = {
+  createPickupOrder,
+  transitionOrder,
+  cancelOrder,
+  getOrder,
+  updateOrder,
+};
