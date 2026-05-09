@@ -8,6 +8,7 @@ QuickCart is a Node.js + Express API for user accounts, store lookup, product av
 - Queue worker is implemented and runs from `workers/emailWorker.js`
 - Auth uses JWT access tokens + refresh tokens (refresh token in HTTP-only cookie)
 - Order creation/cancel/transition logic is implemented with transactional DB operations
+- User profile updates are implemented with Joi validation, authorization checks, password hashing, and transactional DB updates
 - Webhook and signup-email jobs are pushed to SQS and processed by the worker
 - Test suite is green: **24/24 suites, 251/251 tests passing**
 
@@ -148,7 +149,7 @@ npm test
 - `POST /users/refresh` (requires refresh token cookie)
 - `GET /users/show` (requires bearer token + query validation)
 - `GET /users/email-verify?token_id=...`
-- `PUT /users/update` (placeholder implementation)
+- `PUT /users/update` (requires bearer token, body validation, and ownership/admin checks)
 - `DELETE /users/delete`
 
 ### Stores
@@ -190,6 +191,7 @@ Request schemas are defined in `models/joiSchema.js`.
 Key validated payloads include:
 
 - user registration/login
+- user profile updates (strict field whitelist via Joi)
 - store lookup
 - product/order payloads (`items`, `location_code`, `service_option_hold_id`)
 - order cancel/transition payloads
@@ -290,6 +292,5 @@ Worker container is defined in `workers/Dockerfile`.
 
 ## Notes / Gaps
 
-- `PUT /users/update` is still not implemented
 - `package.json` currently has only `test` script (no `start`/`dev` script)
 - Keep secrets out of version-controlled files and environment manifests
