@@ -6,6 +6,7 @@ const {
   registerUser,
   getUserByEmail,
   new_access_token_from_refresh_token,
+  update_user,
 } = require("../../service/userService");
 const User = require("../../models/userModel");
 const { hashPassword, comparePassword } = require("../../utils/hash");
@@ -20,6 +21,8 @@ const {
 const jwt_token = require("../../models/jwtTokenModel");
 const { validateEmail } = require("../../utils/validEmail");
 const withTransaction = require("../../utils/withTransaction");
+const isAdmin = require("../../utils/isadmin");
+const isSameUser = require("../../utils/sameUser");
 const { any } = require("joi");
 
 const sendToQueue = require("../../queues/sendToQueue");
@@ -31,6 +34,8 @@ jest.mock("../../utils/validEmail");
 jest.mock("../../models/jwtTokenModel");
 jest.mock("../../utils/withTransaction", () => jest.fn());
 jest.mock("../../queues/sendToQueue");
+jest.mock("../../utils/isadmin");
+jest.mock("../../utils/sameUser");
 
 const mockLogger = {
   info: jest.fn(),
@@ -124,7 +129,7 @@ describe("loginUser function", () => {
 
     await expect(
       loginUser(testEmail, testPassword, mockLogger),
-    ).rejects.toThrow("Invalid Token");
+    ).rejects.toThrow("Invalid Credentials");
   });
 });
 
@@ -176,6 +181,175 @@ describe("registerUser function", () => {
     );
     expect(signUpToken).toHaveBeenCalledWith(userObj);
     expect(sendToQueue).toHaveBeenCalled();
+  });
+});
+
+describe("update_user function", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    withTransaction.mockImplementation(async (callback) => {
+      return await callback(mockClient);
+    });
+  });
+
+  it("should update the user when the request comes from the same user", async () => {
+    const userId = "user-123";
+    const updatedData = { name: "New Name", email: "new@test.com" };
+    const tokenUser = { id: userId, role: "user" };
+
+    User.getById.mockResolvedValue({
+      rowCount: 1,
+      rows: [
+        {
+          id: userId,
+          name: "Old Name",
+          email: "old@test.com",
+          role: "user",
+        },
+      ],
+    });
+    isAdmin.mockReturnValue(false);
+    isSameUser.mockReturnValue(true);
+    User.updateUser.mockResolvedValue({
+      rowCount: 1,
+      rows: [{ id: userId, name: "New Name", email: "new@test.com" }],
+    });
+
+    const result = await update_user(
+      userId,
+      updatedData,
+      tokenUser,
+      mockLogger,
+    );
+
+    expect(result).toEqual({
+      id: userId,
+      name: "New Name",
+      email: "new@test.com",
+    });
+    expect(User.getById).toHaveBeenCalledWith(userId, mockClient);
+    expect(User.updateUser).toHaveBeenCalledWith(
+      userId,
+      updatedData,
+      mockClient,
+    );
+  });
+
+  it("should hash password before updating", async () => {
+    const userId = "user-123";
+    const updatedData = { password: "newPassword123" };
+    const tokenUser = { id: userId, role: "user" };
+
+    User.getById.mockResolvedValue({
+      rowCount: 1,
+      rows: [{ id: userId, name: "Test User", email: "test@test.com" }],
+    });
+    isAdmin.mockReturnValue(false);
+    isSameUser.mockReturnValue(true);
+    hashPassword.mockResolvedValue("hashedPassword123");
+    User.updateUser.mockResolvedValue({
+      rowCount: 1,
+      rows: [{ id: userId, email: "test@test.com" }],
+    });
+
+    await update_user(userId, updatedData, tokenUser, mockLogger);
+
+    expect(hashPassword).toHaveBeenCalledWith("newPassword123");
+    expect(User.updateUser).toHaveBeenCalledWith(
+      userId,
+      { password: "hashedPassword123" },
+      mockClient,
+    );
+  });
+
+  it("should allow admin to update another user", async () => {
+    const userId = "user-123";
+    const updatedData = { name: "Updated Name" };
+    const tokenUser = { id: "admin-1", role: "admin" };
+
+    User.getById.mockResolvedValue({
+      rowCount: 1,
+      rows: [
+        {
+          id: userId,
+          name: "Old Name",
+          email: "old@test.com",
+          role: "user",
+        },
+      ],
+    });
+    isAdmin.mockReturnValue(true);
+    User.updateUser.mockResolvedValue({
+      rowCount: 1,
+      rows: [{ id: userId, name: "Updated Name" }],
+    });
+
+    const result = await update_user(
+      userId,
+      updatedData,
+      tokenUser,
+      mockLogger,
+    );
+
+    expect(result).toEqual({
+      id: userId,
+      name: "Updated Name",
+    });
+    expect(isAdmin).toHaveBeenCalledWith("admin");
+    expect(User.updateUser).toHaveBeenCalledWith(
+      userId,
+      updatedData,
+      mockClient,
+    );
+  });
+
+  it("should throw when the user does not exist", async () => {
+    const userId = "missing-user";
+    const updatedData = { name: "New Name" };
+    const tokenUser = { id: userId, role: "user" };
+
+    User.getById.mockResolvedValue({ rowCount: 0, rows: [] });
+
+    await expect(
+      update_user(userId, updatedData, tokenUser, mockLogger),
+    ).rejects.toThrow("User not Found");
+  });
+
+  it("should throw when the caller is not allowed to update the user", async () => {
+    const userId = "user-123";
+    const updatedData = { name: "Hacked Name" };
+    const tokenUser = { id: "other-user", role: "user" };
+
+    User.getById.mockResolvedValue({
+      rowCount: 1,
+      rows: [{ id: userId, name: "Old Name", email: "old@test.com" }],
+    });
+    isAdmin.mockReturnValue(false);
+    isSameUser.mockReturnValue(false);
+
+    await expect(
+      update_user(userId, updatedData, tokenUser, mockLogger),
+    ).rejects.toThrow("You do not have the permission to update this user");
+    expect(User.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("should log and throw when update returns no rows", async () => {
+    const userId = "user-123";
+    const updatedData = { name: "New Name" };
+    const tokenUser = { id: userId, role: "user" };
+
+    User.getById.mockResolvedValue({
+      rowCount: 1,
+      rows: [{ id: userId, name: "Old Name", email: "old@test.com" }],
+    });
+    isAdmin.mockReturnValue(false);
+    isSameUser.mockReturnValue(true);
+    User.updateUser.mockResolvedValue({ rowCount: 0, rows: [] });
+
+    await expect(
+      update_user(userId, updatedData, tokenUser, mockLogger),
+    ).rejects.toThrow("Internal Server Error");
+    expect(mockLogger.error).toHaveBeenCalledWith("User Not Updated");
   });
 });
 
@@ -244,7 +418,7 @@ describe("getUserByEmail", () => {
 
     await expect(
       getUserByEmail(testEmail, testUserId, mockLogger),
-    ).rejects.toThrow("User not Found");
+    ).rejects.toThrow("You do not have the permission to view this user");
     expect(validateEmail).toHaveBeenCalledWith(testEmail);
     expect(User.getByEmail).toHaveBeenCalledWith(testEmail);
   });

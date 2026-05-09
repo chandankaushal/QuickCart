@@ -11,6 +11,11 @@ class UnauthorizedError extends ExpressError {
     super("Invalid Token", 401, "Unauthorized");
   }
 }
+class CannotLoginError extends ExpressError {
+  constructor() {
+    super("Invalid Credentials", 401, "Unauthorized");
+  }
+}
 class ForbiddenError extends ExpressError {
   constructor() {
     super(
@@ -42,4 +47,5 @@ module.exports = {
   ForbiddenError,
   InternalServerError,
   RateLimitError,
+  CannotLoginError,
 };

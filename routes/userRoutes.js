@@ -22,6 +22,7 @@ const {
   getUserSchema,
   storeSchema,
   loginSchema,
+  updateUserSchema,
 } = require("../models/joiSchema");
 const {
   checkValidToken,
@@ -36,7 +37,12 @@ router.get(
   wrapAsync(getUsers),
 );
 router.post("/register", validateBody(userSchema), wrapAsync(signupUser));
-router.put("/update", wrapAsync(updateUser));
+router.put(
+  "/:id/update",
+  validateBody(updateUserSchema),
+  checkValidToken,
+  wrapAsync(updateUser),
+);
 router.delete("/delete", wrapAsync(deleteUser));
 router.post("/login", validateBody(loginSchema), wrapAsync(login));
 router.post(

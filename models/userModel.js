@@ -35,8 +35,21 @@ const User = {
     return response;
   },
 
-  async updateUser(req, res) {
-    res.send("Update User");
+  async updateUser(currentUserId, newData, client = null) {
+    const preStatement = `UPDATE ${user_table}`;
+    let statement = "";
+    const setClause = Object.keys(newData)
+      .map((el, index) => `${el} = $${index + 1}`)
+      .join(", ");
+    const returnParams = Object.keys(newData).join(",");
+    const finalStatement = `${preStatement} SET ${setClause} WHERE id = $${Object.keys(newData).length + 1} RETURNING id, email`;
+    let params = Object.keys(newData).map((el) => newData[el]);
+    params.push(currentUserId);
+    // EXECUTE
+    const runner = client || pool;
+    return await runner.query(finalStatement, params);
+    //MAKE SURE IT IS UPDATED
+    // res.send("Update User");
   },
 
   async loginUser(email, password) {
@@ -49,6 +62,12 @@ const User = {
     let sql = `UPDATE ${user_table} SET verified = true WHERE id = $1 AND verified = false`;
     let values = [id];
     const runner = client || pool;
+    return await runner.query(sql, values);
+  },
+  async getById(id, client = null) {
+    const sql = `SELECT * FROM ${user_table} WHERE id = $1`;
+    const values = [id];
+    let runner = client || pool;
     return await runner.query(sql, values);
   },
 };

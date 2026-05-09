@@ -25,9 +25,26 @@ class InvalidEmailError extends ExpressError {
   }
 }
 
+class CannotViewUserError extends ExpressError {
+  constructor() {
+    super("You do not have the permission to view this user", 400, "FORBIDDEN");
+  }
+}
+class CannotUpdateUserError extends ExpressError {
+  constructor() {
+    super(
+      "You do not have the permission to update this user",
+      400,
+      "FORBIDDEN",
+    );
+  }
+}
+
 module.exports = {
   NoUserExistsError,
   UserNotActiveError,
   InvalidVerificationTokenError,
   InvalidEmailError,
+  CannotViewUserError,
+  CannotUpdateUserError,
 };
