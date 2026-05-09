@@ -6,6 +6,7 @@ const {
   registerUser,
   new_access_token_from_refresh_token,
   email_verify_token,
+  update_user,
 } = require("../service/userService");
 
 const { sendSuccess, setRefreshTokenCookie } = require("../utils/apiResponse");
@@ -15,8 +16,11 @@ let user_table = `"quickcart".users`;
 
 async function getUsers(req, res) {
   let { email } = req.query;
+
   req.log.info({ email }, "Looking up this user in DB");
+
   let response = await getUserByEmail(email, req.user.id, req.log);
+
   req.log.info({ email }, "User Found");
   sendSuccess(res, null, response.rows, 200);
 }
@@ -53,10 +57,6 @@ async function deleteUser(req, res) {
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });
   }
-}
-
-async function updateUser(req, res) {
-  res.send("Update User");
 }
 
 async function login(req, res) {
@@ -117,6 +117,12 @@ async function getToken(req, res) {
     password: password,
   });
   res.send(response.data);
+}
+async function updateUser(req, res) {
+  // Call Service
+  const newData = req.body;
+  let result = await update_user(req.params.id, newData, req.user, req.log);
+  sendSuccess(res, "User Updated", result, 200);
 }
 
 module.exports = {

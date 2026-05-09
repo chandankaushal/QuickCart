@@ -1,7 +1,12 @@
 const { validateEmail } = require("../utils/validEmail");
 const User = require("../models/userModel");
 const jwt_token = require("../models/jwtTokenModel");
-const { ExpressError, UnauthorizedError } = require("../utils/ExpressError");
+const {
+  ExpressError,
+  UnauthorizedError,
+  InternalServerError,
+  CannotLoginError,
+} = require("../utils/ExpressError");
 const { comparePassword, hashPassword } = require("../utils/hash");
 const {
   getToken,
@@ -24,18 +29,26 @@ const {
   UserNotActiveError,
   InvalidVerificationTokenError,
   InvalidEmailError,
+  CannotViewUserError,
+  CannotUpdateUserError,
 } = require("../errors/userErrors");
+const isAdmin = require("../utils/isadmin");
+const isSameUser = require("../utils/sameUser");
 
 async function getUserByEmail(email, user_id, log = logger) {
   if (!user_id) {
     throw new NoUserExistsError();
   }
+  console.log(user_id);
   log.info({ email }, "Validating Email");
   let isValid = validateEmail(email);
 
   if (isValid) {
     let response = await User.getByEmail(email);
-    if (response.rowCount >= 1 && user_id == response.rows[0].id) {
+    if (response.rowCount >= 1) {
+      if (user_id != response.rows[0].id) {
+        throw new CannotViewUserError();
+      }
       log.info(`Found User`, response.rows[0].id);
       return response;
     } else {
@@ -82,7 +95,7 @@ async function loginUser(email, password, log = logger) {
 
     return { access_token: access_token, refresh_token: refresh_token };
   } else {
-    throw new UnauthorizedError();
+    throw new CannotLoginError();
   }
 }
 
@@ -157,10 +170,50 @@ async function email_verify_token(token_id, log = logger) {
   });
   return withTransactionResponse;
 }
+async function update_user(userInParams, updatedUserData, tokenUser, log) {
+  const withTransactionResponse = await withTransaction(async (client) => {
+    const response = await User.getById(userInParams, client);
+    if (dbReturnedRows(response)) {
+      let userToUpdate = response.rows[0];
+      if (
+        isAdmin(tokenUser.role) ||
+        isSameUser(tokenUser.id, userToUpdate.id)
+      ) {
+        if (updatedUserData.password) {
+          updatedUserData.password = await hashPassword(
+            updatedUserData.password,
+          );
+        }
+        let result = await User.updateUser(
+          userToUpdate.id,
+          updatedUserData,
+          client,
+        );
+        if (!result || result.rowCount === 0) {
+          log.error("User Not Updated");
+          throw new InternalServerError();
+        }
+
+        return result.rows[0];
+      } else {
+        throw new CannotUpdateUserError();
+      }
+    }
+    throw new NoUserExistsError();
+  });
+  return withTransactionResponse;
+}
 module.exports = {
   getUserByEmail,
   loginUser,
   registerUser,
   new_access_token_from_refresh_token,
   email_verify_token,
+  update_user,
 };
+function dbReturnedRows(response) {
+  if (response.rowCount > 0) {
+    return true;
+  }
+  return false;
+}

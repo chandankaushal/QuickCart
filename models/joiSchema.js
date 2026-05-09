@@ -107,6 +107,13 @@ const updateOrderSchema = Joi.object({
     .required(),
   service_option_hold_id: Joi.number().integer().required(),
 });
+
+const updateUserSchema = Joi.object({
+  name: Joi.string().min(3).max(30).optional(),
+  email: Joi.string().email().optional(),
+  password: Joi.string().min(4).optional(),
+}).unknown(false);
+
 module.exports = {
   userSchema,
   storeSchema,
@@ -120,4 +127,5 @@ module.exports = {
   transitionOrderSchema,
   getOrderSchema,
   updateOrderSchema,
+  updateUserSchema,
 };
