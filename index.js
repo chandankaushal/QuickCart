@@ -15,6 +15,7 @@ const storeRoutes = require("./routes/storeRoutes");
 const serviceOptionsRoutes = require("./routes/serviceOptionsRoutes");
 const productRoutes = require("./routes/productRoutes.js");
 const orderRoutes = require("./routes/orderRoutes.js");
+const mcpRoutes = require("./routes/mcpRoutes.js");
 const errorHandler = require("./middleware/error.js");
 const logger = require("./utils/logger");
 const pinoMiddleware = require("./middleware/pinoLogger.js");
@@ -54,6 +55,7 @@ app.use("/stores", storeRoutes);
 app.use("/service_options", serviceOptionsRoutes);
 app.use("/products", productRoutes);
 app.use("/orders", orderRoutes);
+app.use("/mcp", mcpRoutes);
 
 const PORT = process.env.PORT || 3000;
 
