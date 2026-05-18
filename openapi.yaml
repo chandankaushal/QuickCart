@@ -259,6 +259,29 @@ components:
           type: integer
       required: [items, location_code]
 
+    AvailableProductsRequest:
+      type: object
+      properties:
+        store_id:
+          type: integer
+          minimum: 1
+      required: [store_id]
+
+    AvailableProduct:
+      type: object
+      properties:
+        product_id:
+          type: integer
+        upc:
+          type: integer
+        name:
+          type: string
+        qty:
+          type: integer
+          minimum: 1
+        price_cents:
+          type: integer
+
     ServiceOptionsPickupRequest:
       type: object
       properties:
@@ -604,6 +627,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /service_options/hold_window:
+    post:
+      tags: [ServiceOptions]
+      summary: Get pickup time window for a hold
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                service_option_hold_id:
+                  type: integer
+              required: [service_option_hold_id]
+      responses:
+        "200":
+          description: Pickup window (starts_at, ends_at) or null if not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /service_options/reserve:
     post:
       tags: [ServiceOptions]
@@ -647,6 +700,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /products/available:
+    post:
+      tags: [Products]
+      summary: List available products for a store
+      description: >-
+        Returns in-stock products (qty > 0) for the given store_id.
+        Requires a valid bearer token.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailableProductsRequest"
+      responses:
+        "200":
+          description: Available products
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/AvailableProduct"
         default:
           description: Error
           content:
