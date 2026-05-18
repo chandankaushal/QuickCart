@@ -67,11 +67,4 @@ async function checkOrderOwner(req, res, next) {
   return next();
 }
 
-function isAdmin(role) {
-  if (role === "admin") {
-    return true;
-  }
-  return false;
-}
-
 module.exports = { checkValidToken, checkValidRefreshToken, checkOrderOwner };

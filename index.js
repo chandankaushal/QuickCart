@@ -62,17 +62,6 @@ app.use("/service_options", serviceOptionsRoutes);
 app.use("/products", productRoutes);
 app.use("/orders", orderRoutes);
 
-if (process.env.CLIENT_DIST_PATH) {
-  const clientDist = path.resolve(process.env.CLIENT_DIST_PATH);
-  app.use(express.static(clientDist));
-  app.get(
-    /^(?!\/users|\/stores|\/products|\/service_options|\/orders|\/monitoring|\/mcp|\/api-docs|\/openapi\.yaml).*/,
-    (req, res) => {
-      res.sendFile(path.join(clientDist, "index.html"));
-    },
-  );
-}
-
 const PORT = process.env.PORT || 3000;
 
 app.use(errorHandler);
