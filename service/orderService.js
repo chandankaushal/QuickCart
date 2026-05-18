@@ -20,6 +20,9 @@ const Product = require("../models/productModel");
 const sendToQueue = require("../queues/sendToQueue");
 const EVENT_GROUP_TYPES = require("../queues/eventGroupTypes");
 const validateStore = require("./validateStore");
+const {
+  getPickupWindowByHoldId,
+} = require("./serviceOptionsService");
 const { InternalServerError } = require("../utils/ExpressError");
 const { checkItemUpdate, performUpdates } = require("../utils/checkItemUpdate");
 
@@ -156,7 +159,20 @@ async function get_order(order_id) {
   if (response.length === 0) {
     throw new OrderNotFoundError();
   }
-  return response;
+  const order = response[0];
+  const itemRows = await OrderItems.getAllAboutItems(order_id);
+  const items = itemRows.map((row) => ({
+    upc: row.upc,
+    qty: row.quantity,
+    unit_price_cents: row.unit_price,
+  }));
+
+  let pickup_slot = null;
+  if (order.service_option_hold_id) {
+    pickup_slot = await getPickupWindowByHoldId(order.service_option_hold_id);
+  }
+
+  return { ...order, items, pickup_slot };
 }
 
 async function update_order(updatePayload, log = logger) {
@@ -181,14 +197,26 @@ async function update_order(updatePayload, log = logger) {
   }
   //Needs to make sure if the user is passing existing service option then okay, but if its a new one then i have to validate again.
 
-  // if (order.service_option_hold_id != updatePayload.service_option_hold_id) {
-  //   await isServiceOptionHoldValid(
-  //     updatePayload.service_option_hold_id,
-  //     order.store_id,
-  //     order.user_id,
-  //   );
-  //   // TO-DO Need to make sure that order update is not happening after due date.
-  // }
+  if (
+    updatePayload.service_option_hold_id &&
+    updatePayload.service_option_hold_id !== order.service_option_hold_id
+  ) {
+    await isServiceOptionHoldValid(
+      updatePayload.service_option_hold_id,
+      order.store_id,
+      order.user_id,
+      log,
+    );
+    await Order.updateServiceOptionHoldId(
+      updatePayload.service_option_hold_id,
+      order.id,
+    );
+    log.info(
+      { order_id: order.id },
+      "Updated service option hold on order",
+    );
+  }
+
   //Check if any items are updated.
   log.info(
     { order_id: order.id },
