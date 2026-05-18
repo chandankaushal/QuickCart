@@ -211,6 +211,10 @@ async function update_order(updatePayload, log = logger) {
       updatePayload.service_option_hold_id,
       order.id,
     );
+    await markServiceOptionHoldTaken(
+      updatePayload.service_option_hold_id,
+      log,
+    );
     log.info(
       { order_id: order.id },
       "Updated service option hold on order",
