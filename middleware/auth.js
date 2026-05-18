@@ -73,4 +73,23 @@ function isAdmin(role) {
   return false;
 }
 
-module.exports = { checkValidToken, checkValidRefreshToken, checkOrderOwner };
+function checkMcpAuthToken(req, res, next) {
+  let authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    throw new UnauthorizedError();
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    if (token === process.env.MCP_AUTH_TOKEN) next();
+  } catch (err) {
+    throw new UnauthorizedError();
+  }
+}
+
+module.exports = {
+  checkValidToken,
+  checkValidRefreshToken,
+  checkOrderOwner,
+  checkMcpAuthToken,
+};
