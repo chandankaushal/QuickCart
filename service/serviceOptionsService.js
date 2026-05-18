@@ -46,4 +46,26 @@ async function reserveServiceOption(service_option_id, user_id, log = logger) {
   return service_option_hold_info;
 }
 
-module.exports = { getServiceOptions, reserveServiceOption };
+async function getPickupWindowByHoldId(hold_id, log = logger) {
+  const rows = await ServiceOptions.getPickupWindowByHoldId(hold_id);
+  if (!rows.length) {
+    log.warn({ hold_id }, "No pickup window found for hold");
+    return null;
+  }
+  const row = rows[0];
+  return {
+    starts_at:
+      row.starts_at instanceof Date
+        ? row.starts_at.toISOString()
+        : row.starts_at,
+    ends_at:
+      row.ends_at instanceof Date ? row.ends_at.toISOString() : row.ends_at,
+    service_option_id: row.service_option_id,
+  };
+}
+
+module.exports = {
+  getServiceOptions,
+  reserveServiceOption,
+  getPickupWindowByHoldId,
+};

@@ -61,6 +61,12 @@ const Order = {
 
     return await runner.query(sql, values);
   },
+  async updateServiceOptionHoldId(hold_id, order_id, client = null) {
+    const sql = `UPDATE ${ORDERS_TABLE} SET service_option_hold_id = $1 WHERE id = $2`;
+    const values = [hold_id, order_id];
+    const runner = client || pool;
+    return await runner.query(sql, values);
+  },
 };
 
 module.exports = Order;

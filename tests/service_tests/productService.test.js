@@ -1,8 +1,10 @@
 const {
   checkProductStock,
   updateQtyinDb,
+  getAvailableProductsByStore,
 } = require("../../service/productService");
 const Product = require("../../models/productModel");
+const validateStore = require("../../service/validateStore");
 
 const mockLogger = {
   info: jest.fn(),
@@ -10,6 +12,7 @@ const mockLogger = {
 };
 
 jest.mock("../../models/productModel");
+jest.mock("../../service/validateStore");
 
 describe("Product Service", () => {
   beforeEach(() => {
@@ -240,6 +243,42 @@ describe("Product Service", () => {
         expect(error.statusCode).toBe(500);
         expect(error.message).toBe("Internal Server Error");
       }
+    });
+  });
+
+  describe("getAvailableProductsByStore", () => {
+    it("should return available products when store exists", async () => {
+      const store_id = 10;
+      const products = [
+        { product_id: 1, upc: 123, qty: 5, price_cents: 199, name: "Milk" },
+      ];
+      validateStore.mockResolvedValue([{ store_id }]);
+      Product.getAvailableByStoreId.mockResolvedValue({ rows: products });
+
+      const result = await getAvailableProductsByStore(store_id, mockLogger);
+
+      expect(validateStore).toHaveBeenCalledWith(store_id, mockLogger);
+      expect(Product.getAvailableByStoreId).toHaveBeenCalledWith(store_id);
+      expect(result).toEqual(products);
+    });
+
+    it("should return empty array when store has no stock", async () => {
+      validateStore.mockResolvedValue([{ store_id: 10 }]);
+      Product.getAvailableByStoreId.mockResolvedValue({ rows: [] });
+
+      const result = await getAvailableProductsByStore(10, mockLogger);
+
+      expect(result).toEqual([]);
+    });
+
+    it("should throw when store does not exist", async () => {
+      const { StoreNotFoundError } = require("../../errors/storeErrors");
+      validateStore.mockRejectedValue(new StoreNotFoundError());
+
+      await expect(getAvailableProductsByStore(999, mockLogger)).rejects.toThrow(
+        "No stores found",
+      );
+      expect(Product.getAvailableByStoreId).not.toHaveBeenCalled();
     });
   });
 

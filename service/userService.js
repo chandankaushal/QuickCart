@@ -203,6 +203,26 @@ async function update_user(userInParams, updatedUserData, tokenUser, log) {
   });
   return withTransactionResponse;
 }
+
+async function loginAgentByUserPhone(phoneNumber, agentInfo, log) {
+  //Lookup If Valid Agent
+  //Lookup User by Phone
+  const response = await User.getByEmail(phoneNumber); // We can change this later
+  if (dbReturnedRows(response)) {
+    //Get user token
+    let userObj = {
+      id: response.rows[0].id,
+      email: response.rows[0].email,
+      role: response.rows[0].role,
+    };
+    const userToken = getToken(userObj);
+    //give that token to agent
+    return userToken;
+    // To-DO verify if the user is the authorized
+  } else {
+    throw new NoUserExistsError();
+  }
+}
 module.exports = {
   getUserByEmail,
   loginUser,
@@ -210,6 +230,7 @@ module.exports = {
   new_access_token_from_refresh_token,
   email_verify_token,
   update_user,
+  loginAgentByUserPhone,
 };
 function dbReturnedRows(response) {
   if (response.rowCount > 0) {

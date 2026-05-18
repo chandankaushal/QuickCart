@@ -38,6 +38,17 @@ const ServiceOptions = {
     );
     return updateServiceOptionsHoldResponse;
   },
+  async getPickupWindowByHoldId(hold_id) {
+    const sql = `
+      SELECT so.starts_at, so.ends_at, so.service_option_id
+      FROM ${service_options_hold_table} h
+      INNER JOIN ${service_options_table} so
+        ON so.service_option_id = h.service_option_id
+      WHERE h.service_option_hold_id = $1
+    `;
+    const { rows } = await pool.query(sql, [hold_id]);
+    return rows;
+  },
   async getStoreForServiceOption(service_option_id) {
     const sql = `SELECT store_id FROM ${service_options_table} WHERE service_option_id = $1`;
     const values = [service_option_id];

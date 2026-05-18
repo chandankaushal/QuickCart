@@ -66,6 +66,35 @@ describe("Product Model", () => {
     });
   });
 
+  describe("getAvailableByStoreId", () => {
+    it("should return in-stock products for a store", async () => {
+      const mockResponse = {
+        rows: [
+          { product_id: 1, upc: 123, qty: 5, price_cents: 199, name: "Milk" },
+          { product_id: 2, upc: 456, qty: 2, price_cents: 299, name: "Bread" },
+        ],
+        rowCount: 2,
+      };
+      pool.query.mockResolvedValue(mockResponse);
+
+      const result = await Product.getAvailableByStoreId(10);
+
+      expect(pool.query).toHaveBeenCalledWith(
+        expect.stringMatching(/qty > 0[\s\S]*name/),
+        [10],
+      );
+      expect(result.rows).toHaveLength(2);
+    });
+
+    it("should return empty array when no products in stock", async () => {
+      pool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+
+      const result = await Product.getAvailableByStoreId(10);
+
+      expect(result.rows).toEqual([]);
+    });
+  });
+
   describe("batchUpdateProductQty", () => {
     it("should update quantity for single item", async () => {
       const mockResponse = { rowCount: 1 };

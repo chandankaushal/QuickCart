@@ -45,6 +45,12 @@ const Product = {
   },
   async createNewProduct() {},
   async DeleteProduct() {},
+  async getAvailableByStoreId(store_id, client = null) {
+    const sql = `SELECT product_id, upc, qty, price_cents, name FROM ${PRODUCT_TABLE} WHERE store_id = $1 AND qty > 0 ORDER BY name ASC, upc ASC`;
+    const values = [store_id];
+    const runner = client || pool;
+    return await runner.query(sql, values);
+  },
   async getPriceByUpc(upc, store_id, client = null) {
     const upcArray = Array.isArray(upc) ? upc : [upc]; // if we get single upc then we pass as [upc]
     let sql = `SELECT upc,price_cents FROM ${PRODUCT_TABLE} WHERE upc = ANY($1::bigint[]) AND store_id = $2`; // Using IN to lookup mutiple products at once

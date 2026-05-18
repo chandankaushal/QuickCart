@@ -2,6 +2,18 @@
 
 QuickCart is a Node.js + Express API for user accounts, store lookup, product availability checks, pickup order lifecycle management, and async integrations via AWS SQS.
 
+## Frontend
+
+The React UI lives in a separate repo: **`../Quickcart-FE`** (sibling folder under `Projects/`).
+
+```bash
+cd ../Quickcart-FE
+npm install
+npm run dev
+```
+
+Set `CLIENT_ORIGIN=http://localhost:5173` on the API for CORS. Optional: `CLIENT_DIST_PATH` to serve a production build from the API.
+
 ## Current Project Status
 
 - API server is implemented and runs from `index.js`
@@ -55,6 +67,8 @@ Create a `.env` file in project root with values matching your environment.
 
 - `PORT` (default fallback is `3000`)
 - `NODE_ENV`
+- `CLIENT_ORIGIN` (CORS origin for the frontend, default `http://localhost:5173`)
+- `CLIENT_DIST_PATH` (optional absolute path to a built frontend `dist/` for the API to serve)
 - `DATABASE_HOST`
 - `DATABASE_PORT`
 - `DATABASE_NAME`
@@ -159,6 +173,7 @@ npm test
 ### Products
 
 - `POST /products/checkAvailability`
+- `POST /products/available` (requires bearer token; body: `{ "store_id": <integer> }`)
 
 ### Service Options
 
