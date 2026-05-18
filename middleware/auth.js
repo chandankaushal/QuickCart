@@ -1,5 +1,9 @@
 const jwt = require("jsonwebtoken");
-const { ExpressError, UnauthorizedError } = require("../utils/ExpressError");
+const {
+  ExpressError,
+  UnauthorizedError,
+  InternalServerError,
+} = require("../utils/ExpressError");
 const jwt_token = require("../models/jwtTokenModel");
 const isOrderOwner = require("../utils/orderOwner");
 
@@ -66,13 +70,6 @@ async function checkOrderOwner(req, res, next) {
   return next();
 }
 
-function isAdmin(role) {
-  if (role === "admin") {
-    return true;
-  }
-  return false;
-}
-
 function checkMcpAuthToken(req, res, next) {
   let authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -81,9 +78,14 @@ function checkMcpAuthToken(req, res, next) {
 
   const token = authHeader.split(" ")[1];
   try {
-    if (token === process.env.MCP_AUTH_TOKEN) next();
+    if (token === process.env.MCP_AUTH_TOKEN) {
+      next();
+    } else {
+      throw new UnauthorizedError();
+    }
   } catch (err) {
-    throw new UnauthorizedError();
+    req.log.error({ err });
+    throw new InternalServerError();
   }
 }
 
