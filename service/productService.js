@@ -1,5 +1,6 @@
 const { InternalServerError } = require("../utils/ExpressError");
 const Product = require("../models/productModel");
+const validateStore = require("./validateStore");
 const logger = require("../utils/logger");
 const {
   AllItemsNotFoundError,
@@ -79,4 +80,18 @@ async function updateQtyinDb(items, store_id, client = null, log = logger) {
   return products_updated;
 }
 
-module.exports = { checkProductStock, updateQtyinDb };
+async function getAvailableProductsByStore(store_id, log = logger) {
+  await validateStore(store_id, log);
+  const { rows } = await Product.getAvailableByStoreId(store_id);
+  log.info(
+    { store_id, count: rows.length },
+    "Fetched available products for store",
+  );
+  return rows;
+}
+
+module.exports = {
+  checkProductStock,
+  updateQtyinDb,
+  getAvailableProductsByStore,
+};
