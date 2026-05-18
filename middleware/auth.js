@@ -78,16 +78,16 @@ function checkMcpAuthToken(req, res, next) {
   }
 
   const token = authHeader.split(" ")[1];
-  try {
-    if (token === process.env.MCP_AUTH_TOKEN) {
-      next();
-    } else {
-      throw new UnauthorizedError();
-    }
-  } catch (err) {
-    req.log.error({ err });
+  if (!process.env.MCP_AUTH_TOKEN) {
+    req.log.error("MCP_AUTH_TOKEN is not configured");
     throw new InternalServerError();
   }
+
+  if (token === process.env.MCP_AUTH_TOKEN) {
+    return next();
+  }
+
+  throw new UnauthorizedError();
 }
 
 module.exports = {
