@@ -74,6 +74,7 @@ Create a `.env` file in project root with values matching your environment.
 - `DATABASE_NAME`
 - `DATABASE_USERNAME`
 - `DATABASE_PASSWORD`
+- `DATABASE_SSL` — set to `true` for RDS/production; omit or `false` for local Postgres without SSL
 
 ### JWT/Auth
 
