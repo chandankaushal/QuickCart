@@ -1,5 +1,9 @@
 const jwt = require("jsonwebtoken");
-const { ExpressError, UnauthorizedError } = require("../utils/ExpressError");
+const {
+  ExpressError,
+  UnauthorizedError,
+  InternalServerError,
+} = require("../utils/ExpressError");
 const jwt_token = require("../models/jwtTokenModel");
 const isOrderOwner = require("../utils/orderOwner");
 const isAdmin = require("../utils/isadmin");
@@ -67,4 +71,28 @@ async function checkOrderOwner(req, res, next) {
   return next();
 }
 
-module.exports = { checkValidToken, checkValidRefreshToken, checkOrderOwner };
+function checkMcpAuthToken(req, res, next) {
+  let authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    throw new UnauthorizedError();
+  }
+
+  const token = authHeader.split(" ")[1];
+  if (!process.env.MCP_AUTH_TOKEN) {
+    req.log.error("MCP_AUTH_TOKEN is not configured");
+    throw new InternalServerError();
+  }
+
+  if (token === process.env.MCP_AUTH_TOKEN) {
+    return next();
+  }
+
+  throw new UnauthorizedError();
+}
+
+module.exports = {
+  checkValidToken,
+  checkValidRefreshToken,
+  checkOrderOwner,
+  checkMcpAuthToken,
+};

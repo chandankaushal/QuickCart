@@ -10,7 +10,7 @@ const { getAvailableProductsSchema } = require("../models/joiSchema");
 const { validateBody } = require("../middleware/validate");
 const wrapAsync = require("../utils/wrapAsync");
 
-router.post("/checkAvailability", checkProductAvailabilty);
+router.post("/checkAvailability", wrapAsync(checkProductAvailabilty));
 router.post(
   "/available",
   validateBody(getAvailableProductsSchema),
