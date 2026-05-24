@@ -6,7 +6,7 @@ async function get_stores(req, res) {
 
   let response = await getStores(zip_code, street, req.log);
 
-  return sendSuccess(res, null, response.rows, 200);
+  return sendSuccess(res, null, response, 200);
 }
 
 module.exports = get_stores;

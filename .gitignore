@@ -8,3 +8,4 @@ workers/
 datadog.yaml
 datadog-agent-config.yaml
 datadog-agent-local.yaml
+postgres.yaml

@@ -20,11 +20,14 @@ const Product = require("../models/productModel");
 const sendToQueue = require("../queues/sendToQueue");
 const EVENT_GROUP_TYPES = require("../queues/eventGroupTypes");
 const validateStore = require("./validateStore");
-const {
-  getPickupWindowByHoldId,
-} = require("./serviceOptionsService");
+const { getPickupWindowByHoldId } = require("./serviceOptionsService");
 const { InternalServerError } = require("../utils/ExpressError");
 const { checkItemUpdate, performUpdates } = require("../utils/checkItemUpdate");
+const { getClient } = require("../utils/redisDb");
+const { response } = require("express");
+const { withCache } = require("../utils/withCache");
+
+const TTL = 60 * 5;
 
 async function create_pickup_order(
   order_id,
@@ -154,30 +157,39 @@ async function cancel_Order(order_id, needsWebhook, log = logger) {
   return cancelOrderResult;
 }
 
-async function get_order(order_id) {
-  const response = await Order.getById(order_id);
-  if (response.length === 0) {
-    throw new OrderNotFoundError();
-  }
-  const order = response[0];
-  const itemRows = await OrderItems.getAllAboutItems(order_id);
-  const items = itemRows.map((row) => ({
-    upc: row.upc,
-    qty: row.quantity,
-    unit_price_cents: row.unit_price,
-  }));
-
-  let pickup_slot = null;
-  if (order.service_option_hold_id) {
-    pickup_slot = await getPickupWindowByHoldId(order.service_option_hold_id);
-  }
-
-  return { ...order, items, pickup_slot };
+async function get_order(order_id, log = logger) {
+  const cacheKey = `order:info:${order_id}`;
+  return await withCache(
+    cacheKey,
+    async (orderId) => {
+      const response = await Order.getById(orderId);
+      if (response.length === 0) {
+        throw new OrderNotFoundError();
+      }
+      const order = response[0];
+      const itemRows = await OrderItems.getAllAboutItems(order.id);
+      const items = itemRows.map((row) => ({
+        upc: row.upc,
+        qty: row.quantity,
+        unit_price_cents: row.unit_price,
+      }));
+      let pickup_slot = null;
+      if (order.service_option_hold_id) {
+        pickup_slot = await getPickupWindowByHoldId(
+          order.service_option_hold_id,
+        );
+      }
+      const result = { ...order, items, pickup_slot };
+      return result;
+    },
+    TTL,
+    log,
+    order_id,
+  );
 }
 
 async function update_order(updatePayload, log = logger) {
   let response = await Order.getById(updatePayload.order_id);
-
   if (!response || response.length === 0) {
     throw new OrderNotFoundError();
   }
@@ -211,14 +223,8 @@ async function update_order(updatePayload, log = logger) {
       updatePayload.service_option_hold_id,
       order.id,
     );
-    await markServiceOptionHoldTaken(
-      updatePayload.service_option_hold_id,
-      log,
-    );
-    log.info(
-      { order_id: order.id },
-      "Updated service option hold on order",
-    );
+    await markServiceOptionHoldTaken(updatePayload.service_option_hold_id, log);
+    log.info({ order_id: order.id }, "Updated service option hold on order");
   }
 
   //Check if any items are updated.
