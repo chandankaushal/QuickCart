@@ -6,6 +6,10 @@ const {
   AllItemsNotFoundError,
   ItemNotFoundError,
 } = require("../errors/itemErrors");
+const { withCache } = require("../utils/withCache");
+
+const TTL = 60;
+
 async function checkProductStock(items, store_id, log = logger, client = null) {
   log.info({ items, store_id }, "checking product availabilty");
   let upcs = items.map((item) => item.upc);
@@ -81,13 +85,22 @@ async function updateQtyinDb(items, store_id, client = null, log = logger) {
 }
 
 async function getAvailableProductsByStore(store_id, log = logger) {
-  await validateStore(store_id, log);
-  const { rows } = await Product.getAvailableByStoreId(store_id);
-  log.info(
-    { store_id, count: rows.length },
-    "Fetched available products for store",
+  const cacheKey = `products:info:${store_id}`;
+  return await withCache(
+    cacheKey,
+    async (storeId) => {
+      await validateStore(storeId, log);
+      const { rows } = await Product.getAvailableByStoreId(storeId);
+      log.info(
+        { storeId, count: rows.length },
+        "Fetched available products for store",
+      );
+      return rows;
+    },
+    TTL,
+    log,
+    store_id,
   );
-  return rows;
 }
 
 module.exports = {
