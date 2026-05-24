@@ -27,7 +27,7 @@ describe("store Service", () => {
     };
     Stores.getStoresByZip.mockResolvedValue(fakeDbResponse);
     let result = await getStores(fakeZip, fakeStreet, mockLogger);
-    expect(result).toEqual(fakeDbResponse);
+    expect(result).toEqual(fakeDbResponse.rows);
     expect(Stores.getStoresByZip).toHaveBeenCalledWith(fakeZip, fakeStreet);
   });
   it("should throw an error if no stores found for zip_code", async () => {
