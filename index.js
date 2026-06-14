@@ -22,7 +22,7 @@ const pinoMiddleware = require("./middleware/pinoLogger.js");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const limiter = require("./utils/rate-limit.js");
-const { connect } = require("./utils/redisDb.js");
+const { startRedis } = require("./utils/redisDb.js");
 
 const app = express();
 app.use(
@@ -80,11 +80,8 @@ const PORT = process.env.PORT || 3000;
 
 app.use(errorHandler);
 
-async function startup(log = logger) {
-  await connect(log);
-  app.listen(PORT, () => {
-    log.info(`Server is running on port ${PORT}`);
-  });
-}
+app.listen(PORT, () => {
+  logger.info(`Server is running on port ${PORT}`);
+});
 
-startup(logger);
+startRedis(logger);

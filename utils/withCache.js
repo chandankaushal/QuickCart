@@ -3,16 +3,25 @@ const { getClient } = require("./redisDb");
 async function withCache(key, workFunc, ttl, log, ...args) {
   const cache = getClient();
   const cacheKey = key;
-  const cached = cache ? await cache.get(cacheKey) : null;
+  let cached = null;
+  try {
+    if (cache && cache.isReady) {
+      const raw = await cache.get(cacheKey);
+      cached = raw ? JSON.parse(raw) : null;
+    }
+  } catch (err) {
+    log.error({ err }, "Cache read failed, falling back to DB");
+    cached = null;
+  }
   if (cached) {
     log.info("Returning From Cache");
-    return JSON.parse(cached);
+    return cached;
   } else {
     //uses the same ...args to spread that array back out into separate arguments when calling workFunc
     log.info("Returning From DB");
     const result = await workFunc(...args);
     try {
-      if (cache) {
+      if (cache && cache.isReady) {
         await cache.set(key, JSON.stringify(result), { EX: ttl });
       }
     } catch (err) {

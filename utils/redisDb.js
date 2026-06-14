@@ -7,16 +7,48 @@ const logger = require("./logger");
 
 let cacheClient = null;
 
+let redisHealthy = false;
+
+let firstConnection = true;
+
 async function connect(log = logger) {
-  if (cacheClient) return cacheClient;
+  if (cacheClient) {
+    return true;
+  }
 
-  cacheClient = createClient({ url: process.env.REDIS_URL });
-  cacheClient.on("error", (err) => log.error("Redis Client Error", err));
+  try {
+    cacheClient = createClient({
+      url: process.env.REDIS_URL,
+      socket: {
+        connectTimeout: 5000,
+        // retry forever with backoff
+        reconnectStrategy: (retries) => {
+          return Math.min(retries * 200, 10000);
+        },
+      },
+    });
+    cacheClient.on("ready", () => {
+      if (!redisHealthy) {
+        redisHealthy = true;
+        firstConnection = false;
+        log.info("Redis is connected");
+      }
+    });
+    cacheClient.on("error", (err) => {
+      if (redisHealthy || firstConnection) {
+        redisHealthy = false;
+        firstConnection = false;
+        log.warn({ err }, "Redis is down, retrying in the background");
+      }
+    });
+    await cacheClient.connect();
 
-  await cacheClient.connect();
-  log.info("Redis is connected!");
-
-  return cacheClient;
+    return true;
+  } catch (err) {
+    cacheClient = null;
+    log.warn({ err }, "There was an error");
+    return false;
+  }
 }
 
 function getClient(log = logger) {
@@ -27,4 +59,8 @@ function getClient(log = logger) {
   return cacheClient;
 }
 
-module.exports = { connect, getClient };
+async function startRedis(log = logger) {
+  await connect(log);
+}
+
+module.exports = { connect, getClient, startRedis };
