@@ -46,7 +46,7 @@ async function connect(log = logger) {
     return true;
   } catch (err) {
     cacheClient = null;
-    log.warn({ err }, "There was an error");
+    log.warn({ err }, "Redis connection failed (will continue without cache)");
     return false;
   }
 }
