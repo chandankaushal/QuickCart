@@ -1,15 +1,8 @@
 const { createClient } = require("redis");
 const logger = require("./logger");
 
-// Simple Redis helper:
-// - Call `await connect()` once at app startup.
-// - Then use `getClient()` to access the connected client.
-
 let cacheClient = null;
-
-let redisHealthy = false;
-
-let firstConnection = true;
+let counter = 0;
 
 async function connect(log = logger) {
   if (cacheClient) {
@@ -28,18 +21,15 @@ async function connect(log = logger) {
       },
     });
     cacheClient.on("ready", () => {
-      if (!redisHealthy) {
-        redisHealthy = true;
-        firstConnection = false;
-        log.info("Redis is connected");
-      }
+      log.info("Redis is connected");
+      counter = 0;
     });
     cacheClient.on("error", (err) => {
-      if (redisHealthy || firstConnection) {
-        redisHealthy = false;
-        firstConnection = false;
-        log.warn({ err }, "Redis is down, retrying in the background");
-      }
+      counter++;
+      log.error(
+        { err },
+        `Redis is down, retrying in the background. Attempt Number ${counter}`,
+      );
     });
     await cacheClient.connect();
 
