@@ -13,7 +13,7 @@ async function withCache(key, workFunc, ttl, log, ...args) {
     log.error({ err }, "Cache read failed, falling back to DB");
     cached = null;
   }
-  if (cached) {
+  if (cached !== null) {
     log.info("Returning From Cache");
     return cached;
   } else {
