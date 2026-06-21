@@ -23,8 +23,6 @@ const validateStore = require("./validateStore");
 const { getPickupWindowByHoldId } = require("./serviceOptionsService");
 const { InternalServerError } = require("../utils/ExpressError");
 const { checkItemUpdate, performUpdates } = require("../utils/checkItemUpdate");
-const { getClient } = require("../utils/redisDb");
-const { response } = require("express");
 const { withCache } = require("../utils/withCache");
 
 const TTL = 60 * 5;
