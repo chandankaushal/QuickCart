@@ -20,9 +20,11 @@ Set `CLIENT_ORIGIN=http://localhost:5173` on the API for CORS. Optional: `CLIENT
 - Queue worker is implemented and runs from `workers/emailWorker.js`
 - Auth uses JWT access tokens + refresh tokens (refresh token in HTTP-only cookie)
 - Order creation/cancel/transition logic is implemented with transactional DB operations
+- Optional Stripe Checkout payment step on order creation, confirmed via webhook
+- Payment-timeout sweeper reclaims stock from orders left unpaid past the window
 - User profile updates are implemented with Joi validation, authorization checks, password hashing, and transactional DB updates
 - Webhook and signup-email jobs are pushed to SQS and processed by the worker
-- Test suite is green: **24/24 suites, 251/251 tests passing**
+- Test suite is green: **25/25 suites, 277/277 tests passing**
 
 ## Tech Stack
 
@@ -30,6 +32,7 @@ Set `CLIENT_ORIGIN=http://localhost:5173` on the API for CORS. Optional: `CLIENT
 - PostgreSQL (`pg`)
 - Joi validation
 - JWT auth (`jsonwebtoken`)
+- Stripe Checkout + webhooks (`stripe`)
 - Pino logging + Datadog tracing (`dd-trace`)
 - AWS SQS + SES worker integration
 - Jest + Supertest
@@ -91,6 +94,16 @@ Create a `.env` file in project root with values matching your environment.
 - `WEBHOOK_URL` (used by webhook sender)
 - SES-related SMTP/AWS settings used by `utils/aws/ses_email.js`
 
+### Payments (Stripe)
+
+- `STRIPE_API_KEY` — Stripe secret key used to create Checkout sessions
+- `STRIPE_WEBHOOK_ENDPOINT_SECRET` — signing secret for verifying webhook events
+
+### Payment Timeout Sweeper
+
+- `PAYMENT_TIMEOUT_MINUTES` (default `10`) — how long an order may stay `awaiting_payment` before it is cancelled and restocked
+- `PAYMENT_SWEEP_INTERVAL_MS` (default `60000`) — interval hint for scheduling the sweeper run
+
 ## Getting Started
 
 1. Install dependencies:
@@ -147,7 +160,9 @@ The docs are generated directly from [openapi.yaml](openapi.yaml), which defines
 Currently defined in `package.json`:
 
 ```bash
-npm test
+npm test          # run the Jest suite
+npm run dev:api   # start the API server (node index.js)
+npm run dev:worker # run the payment-timeout sweeper (node workers/paymentSweeper.js)
 ```
 
 ## API Endpoints
@@ -183,7 +198,7 @@ npm test
 
 ### Orders
 
-- `POST /orders/pickup/create_order` (requires bearer token)
+- `POST /orders/pickup/create_order` (requires bearer token; supports optional `collect_payment` boolean to require Stripe payment before the order is activated)
 - `POST /orders/cancel` (requires bearer token + owner check)
 - `POST /orders/transition_order` (requires bearer token + owner check)
 
@@ -200,6 +215,11 @@ Example request body:
   "needsWebhook": true
 }
 ```
+
+### Payments
+
+- `POST /payment/create-checkout-session` → creates a Stripe Checkout session and returns the payment URL
+- `POST /payment/webhook` → receives Stripe events (raw body, signature-verified). On `checkout.session.completed` with `payment_status = paid`, the associated order is moved from `awaiting_payment` to `brand_new`.
 
 ## Request Validation
 
@@ -230,9 +250,21 @@ For pickup order creation (`create_pickup_order`):
 5. Mark hold as taken
 6. Decrement stock
 7. Calculate order total
-8. Create order record
+8. Create order record (state is `awaiting_payment` when `collect_payment=true`, otherwise `brand_new`)
 9. Add order items
 10. Optionally enqueue webhook event when `needsWebhook=true`
+11. Commit transaction
+12. When `collect_payment=true`, create a Stripe Checkout session (outside the transaction) and return the payment URL
+
+For payment confirmation (Stripe webhook):
+
+1. Verify the Stripe signature on the raw request body
+2. On `checkout.session.completed` with `payment_status = paid`, record the session and transition the order from `awaiting_payment` to `brand_new` (state-guarded, so a duplicate/late event cannot resurrect a cancelled order)
+
+For payment timeout (sweeper, `workers/paymentSweeper.js`):
+
+1. Find orders still `awaiting_payment` past `PAYMENT_TIMEOUT_MINUTES`
+2. Cancel each one (guarded on `awaiting_payment`, so a just-paid order is left untouched) and restock its items
 
 For order cancellation (`cancel_Order`):
 
@@ -298,8 +330,8 @@ npm test
 
 Current verified result in this workspace:
 
-- Test suites: `24 passed`
-- Tests: `251 passed`
+- Test suites: `25 passed`
+- Tests: `277 passed`
 
 ## Docker
 
@@ -308,5 +340,7 @@ Worker container is defined in `workers/Dockerfile`.
 
 ## Notes / Gaps
 
-- `package.json` currently has only `test` script (no `start`/`dev` script)
+- `package.json` defines `test`, `dev:api`, and `dev:worker` scripts
+- The payment sweeper worker lives under the gitignored `workers/` folder and is deployed separately; only its query model (`models/orderSweepModel.js`) is tracked
+- Payment follow-ups not yet implemented: refund-on-late-payment, a Stripe event-idempotency table, and moving hardcoded `localhost:5173` checkout URLs to env vars
 - Keep secrets out of version-controlled files and environment manifests
