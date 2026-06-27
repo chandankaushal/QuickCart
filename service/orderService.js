@@ -24,6 +24,7 @@ const { getPickupWindowByHoldId } = require("./serviceOptionsService");
 const { InternalServerError } = require("../utils/ExpressError");
 const { checkItemUpdate, performUpdates } = require("../utils/checkItemUpdate");
 const { withCache } = require("../utils/withCache");
+const createCheckoutSessionService = require("./paymentService");
 
 const TTL = 60 * 5;
 
@@ -34,6 +35,7 @@ async function create_pickup_order(
   items,
   user_id,
   needsWebhook = false,
+  collect_payment,
   log = logger,
 ) {
   const service_type = "pickup";
@@ -59,6 +61,7 @@ async function create_pickup_order(
     // Calculate Total
     const order_total = await calculateOrderTotal(items, store_id, client);
     // put the order in the DB
+    let state = collect_payment === true ? "awaiting_payment" : "brand_new";
     const orderResponse = await Order.create(
       order_id,
       service_type,
@@ -66,6 +69,7 @@ async function create_pickup_order(
       service_option_hold_id,
       user_id,
       order_total,
+      state,
       client,
     );
     // Put items in the order_items db
@@ -94,8 +98,21 @@ async function create_pickup_order(
     // Send Email to the customer with details of the items and the time of pickup
     // we create a new Obj with details and fetch the ETA from the service_option_hold_id
 
-    return orderResponse;
+    return { orderResponse, order_total };
   });
+
+  if (collect_payment === true) {
+    let session = await createCheckoutSessionService(
+      order_id,
+      orderResult.order_total,
+      log,
+    );
+    return {
+      order_id: order_id,
+      url: session.url,
+      message: "Please complete your payment",
+    };
+  }
 
   return orderResult;
 }

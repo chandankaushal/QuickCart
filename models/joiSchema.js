@@ -45,6 +45,7 @@ const orderSchema = Joi.object({
   location_code: Joi.number().integer().required(),
   service_option_hold_id: Joi.number().integer().required(),
   needsWebhook: Joi.boolean().optional(),
+  collect_payment: Joi.boolean().default(false),
 });
 
 const getServiceOptionSchema = Joi.object({

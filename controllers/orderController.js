@@ -8,8 +8,14 @@ const { sendSuccess } = require("../utils/apiResponse");
 const { transitionOrderService } = require("../service/transitionOrder");
 
 async function createPickupOrder(req, res) {
-  let { order_id, location_code, service_option_hold_id, items, needsWebhook } =
-    req.body;
+  let {
+    order_id,
+    location_code,
+    service_option_hold_id,
+    items,
+    needsWebhook,
+    collect_payment = false,
+  } = req.body;
   let user_id = req.user.id;
   let response = await create_pickup_order(
     order_id,
@@ -18,10 +24,18 @@ async function createPickupOrder(req, res) {
     items,
     user_id,
     needsWebhook,
+    collect_payment,
     req.log,
   );
   if (response) {
-    sendSuccess(res, "Order Successfully created", { order_id }, 200);
+    sendSuccess(
+      res,
+      response.message ? response.message : "Order Successfully created",
+      response.url
+        ? { url: response.url, order_id: response.order_id }
+        : { order_id },
+      200,
+    );
   }
 }
 async function transitionOrder(req, res) {

@@ -4,13 +4,15 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "dev:api": "node index.js"
+    "dev:api": "node index.js",
+    "dev:worker": "node workers/paymentSweeper.js"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.984.0",
+    "@runware/sdk": "^1.3.4",
     "axios": "^1.13.4",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
