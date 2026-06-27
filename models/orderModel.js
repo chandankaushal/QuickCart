@@ -10,9 +10,10 @@ const Order = {
     service_option_hold_id,
     user_id,
     order_total,
+    state,
     client = null,
   ) {
-    let sql = `INSERT INTO ${ORDERS_TABLE} (id,service_type,service_option_hold_id,user_id,store_id,order_total) VALUES ($1,$2,$3,$4,$5,$6)`;
+    let sql = `INSERT INTO ${ORDERS_TABLE} (id,service_type,service_option_hold_id,user_id,store_id,order_total,state) VALUES ($1,$2,$3,$4,$5,$6,$7)`;
     let params = [
       order_id,
       service_type,
@@ -20,6 +21,7 @@ const Order = {
       user_id,
       store_id,
       order_total,
+      state,
     ];
     const runner = client || pool;
     return await runner.query(sql, params);
@@ -66,6 +68,13 @@ const Order = {
     const values = [hold_id, order_id];
     const runner = client || pool;
     return await runner.query(sql, values);
+  },
+  async markPaymentAsComplete(order_id, client = null) {
+    let sql = `UPDATE ${ORDERS_TABLE} SET state = $1 WHERE id = $2 AND state = $3`;
+
+    let params = ["brand_new", order_id, "awaiting_payment"];
+    const runner = client || pool;
+    return await runner.query(sql, params);
   },
 };
 

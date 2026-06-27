@@ -16,6 +16,7 @@ const serviceOptionsRoutes = require("./routes/serviceOptionsRoutes");
 const productRoutes = require("./routes/productRoutes.js");
 const orderRoutes = require("./routes/orderRoutes.js");
 const mcpRoutes = require("./routes/mcpRoutes.js");
+const paymentRoutes = require("./routes/paymentRoutes.js");
 const errorHandler = require("./middleware/error.js");
 const logger = require("./utils/logger");
 const pinoMiddleware = require("./middleware/pinoLogger.js");
@@ -32,7 +33,10 @@ app.use(
   }),
 );
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use((req, res, next) => {
+  if (req.originalUrl === "/payment/webhook") return next();
+  express.json()(req, res, next);
+});
 app.use(pinoMiddleware);
 app.use(cookieParser());
 app.use(limiter);
@@ -64,6 +68,7 @@ app.use("/service_options", serviceOptionsRoutes);
 app.use("/products", productRoutes);
 app.use("/orders", orderRoutes);
 app.use("/mcp", mcpRoutes);
+app.use("/payment", paymentRoutes);
 
 if (process.env.CLIENT_DIST_PATH) {
   const clientDist = path.resolve(process.env.CLIENT_DIST_PATH);
