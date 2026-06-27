@@ -117,6 +117,7 @@ describe("Create Order Service", () => {
       items,
       user_id,
       true,
+      false,
       mockLogger,
     );
     let orderObj = {
@@ -129,9 +130,12 @@ describe("Create Order Service", () => {
     };
 
     expect(result).toEqual({
-      rowCount: 1,
-      command: "INSERT",
-      rows: [{ order: "abc123" }],
+      orderResponse: {
+        rowCount: 1,
+        command: "INSERT",
+        rows: [{ order: "abc123" }],
+      },
+      order_total: 100,
     });
     expect(Order.create).toHaveBeenCalledWith(
       fakeOrderId,
@@ -140,6 +144,7 @@ describe("Create Order Service", () => {
       service_option_hold_id,
       user_id,
       100,
+      "brand_new",
       mockClient,
     );
 
@@ -184,6 +189,7 @@ describe("Create Order Service", () => {
         items,
         user_id,
         false,
+        false,
         mockLogger,
       ),
     ).rejects.toThrow("No stores found");
@@ -208,6 +214,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         false,
         mockLogger,
       ),
@@ -235,6 +242,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         false,
         mockLogger,
       ),
@@ -264,6 +272,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         false,
         mockLogger,
       ),
@@ -301,6 +310,7 @@ describe("Create Order Service", () => {
         items,
         user_id,
         false,
+        false,
         mockLogger,
       ),
     ).rejects.toThrow("Product not found");
@@ -334,6 +344,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         false,
         mockLogger,
       ),
@@ -372,6 +383,7 @@ describe("Create Order Service", () => {
         items,
         user_id,
         false,
+        false,
         mockLogger,
       ),
     ).rejects.toThrow("Failed to mark hold as taken");
@@ -404,6 +416,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         false,
         mockLogger,
       ),
@@ -443,10 +456,11 @@ describe("Create Order Service", () => {
       items,
       user_id,
       false,
+      false,
       mockLogger,
     );
 
-    expect(result.rowCount).toBe(1);
+    expect(result.orderResponse.rowCount).toBe(1);
     expect(Stores.getStoreById).toHaveBeenCalledWith(123);
   });
 
@@ -464,6 +478,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         false,
         mockLogger,
       ),
@@ -486,6 +501,7 @@ describe("Create Order Service", () => {
         service_option_hold_id,
         items,
         user_id,
+        false,
         false,
         mockLogger,
       ),
