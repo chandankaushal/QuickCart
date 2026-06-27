@@ -41,6 +41,10 @@ jest.mock("../../models/productModel");
 jest.mock("../../service/calculateOrderTotal");
 jest.mock("../../queues/sendToQueue");
 jest.mock("../../utils/checkItemUpdate");
+// Factory mock (not automock): avoids loading the real module, which would
+// construct the Stripe client at import time and require STRIPE_API_KEY.
+// create_pickup_order only calls this when collect_payment=true.
+jest.mock("../../service/paymentService", () => jest.fn());
 const mockClient = {};
 
 describe("Create Order Service", () => {
