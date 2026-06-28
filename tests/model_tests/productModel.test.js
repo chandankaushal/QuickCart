@@ -153,4 +153,68 @@ describe("Product Model", () => {
       ).rejects.toThrow("Database update failed");
     });
   });
+
+  describe("getById", () => {
+    it("should select the product name by product_id", async () => {
+      pool.query.mockResolvedValue({ rows: [{ name: "Milk" }], rowCount: 1 });
+
+      const result = await Product.getById(7);
+
+      expect(pool.query).toHaveBeenCalledWith(
+        expect.stringContaining("WHERE product_id = $1"),
+        [7],
+      );
+      expect(result.rows[0].name).toBe("Milk");
+    });
+
+    it("should return empty rows when product does not exist", async () => {
+      pool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+
+      const result = await Product.getById(999);
+
+      expect(result.rows).toEqual([]);
+    });
+  });
+
+  describe("updateProductImage", () => {
+    it("should set runware_task_id for the product", async () => {
+      pool.query.mockResolvedValue({ rowCount: 1 });
+
+      const result = await Product.updateProductImage(7, "task-abc");
+
+      expect(pool.query).toHaveBeenCalledWith(
+        expect.stringContaining("SET runware_task_id = $1"),
+        ["task-abc", 7],
+      );
+      expect(result.rowCount).toBe(1);
+    });
+  });
+
+  describe("getImageById", () => {
+    it("should join RUNWARE_DATA and return image info for the product", async () => {
+      const row = {
+        product_id: 7,
+        name: "Milk",
+        task_id: "task-abc",
+        image_url: "https://img.example/abc.png",
+      };
+      pool.query.mockResolvedValue({ rows: [row], rowCount: 1 });
+
+      const result = await Product.getImageById(7);
+
+      expect(pool.query).toHaveBeenCalledWith(
+        expect.stringMatching(/LEFT JOIN[\s\S]*RUNWARE_DATA/i),
+        [7],
+      );
+      expect(result.rows[0]).toEqual(row);
+    });
+
+    it("should return empty rows when product does not exist", async () => {
+      pool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+
+      const result = await Product.getImageById(999);
+
+      expect(result.rows).toEqual([]);
+    });
+  });
 });

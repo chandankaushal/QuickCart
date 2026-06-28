@@ -2,9 +2,11 @@ const {
   checkProductStock,
   updateQtyinDb,
   getAvailableProductsByStore,
+  generateProductImage,
 } = require("../../service/productService");
 const Product = require("../../models/productModel");
 const validateStore = require("../../service/validateStore");
+const { generateImage } = require("../../utils/runwareApi");
 
 const mockLogger = {
   info: jest.fn(),
@@ -13,6 +15,7 @@ const mockLogger = {
 
 jest.mock("../../models/productModel");
 jest.mock("../../service/validateStore");
+jest.mock("../../utils/runwareApi");
 
 describe("Product Service", () => {
   beforeEach(() => {
@@ -279,6 +282,67 @@ describe("Product Service", () => {
         "No stores found",
       );
       expect(Product.getAvailableByStoreId).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("generateProductImage", () => {
+    it("should queue an image and persist the task id for an existing product", async () => {
+      Product.getById.mockResolvedValue({ rows: [{ name: "Organic Milk" }] });
+      generateImage.mockResolvedValue([{ taskUUID: "task-abc" }]);
+      Product.updateProductImage.mockResolvedValue({ rowCount: 1 });
+
+      const result = await generateProductImage(7, mockLogger);
+
+      expect(Product.getById).toHaveBeenCalledWith(7);
+      expect(generateImage).toHaveBeenCalledWith(
+        "Generate a catalog image of Organic Milk",
+        mockLogger,
+      );
+      expect(Product.updateProductImage).toHaveBeenCalledWith(7, "task-abc");
+      expect(result).toEqual([{ taskUUID: "task-abc" }]);
+    });
+
+    it("should throw NotFoundError when the product does not exist", async () => {
+      Product.getById.mockResolvedValue({ rows: [] });
+
+      await expect(generateProductImage(999, mockLogger)).rejects.toThrow(
+        "The requested resource does not exist",
+      );
+
+      expect(generateImage).not.toHaveBeenCalled();
+      expect(Product.updateProductImage).not.toHaveBeenCalled();
+    });
+
+    it("should use NOT_FOUND error code when the product does not exist", async () => {
+      Product.getById.mockResolvedValue({ rows: [] });
+
+      try {
+        await generateProductImage(999, mockLogger);
+        fail("Expected error to be thrown");
+      } catch (error) {
+        expect(error.code).toBe("NOT_FOUND");
+        expect(error.statusCode).toBe(404);
+      }
+    });
+
+    it("should throw InternalServerError when no image task is returned", async () => {
+      Product.getById.mockResolvedValue({ rows: [{ name: "Bread" }] });
+      generateImage.mockResolvedValue([]);
+
+      await expect(generateProductImage(3, mockLogger)).rejects.toThrow(
+        "Internal Server Error",
+      );
+
+      expect(Product.updateProductImage).not.toHaveBeenCalled();
+    });
+
+    it("should propagate errors from the Runware API", async () => {
+      Product.getById.mockResolvedValue({ rows: [{ name: "Bread" }] });
+      generateImage.mockRejectedValue(new Error("Runware down"));
+
+      await expect(generateProductImage(3, mockLogger)).rejects.toThrow(
+        "Runware down",
+      );
     });
   });
 

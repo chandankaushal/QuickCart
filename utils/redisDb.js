@@ -27,7 +27,7 @@ async function connect(log = logger) {
     cacheClient.on("error", (err) => {
       counter++;
       log.error(
-        { err },
+        { redisError: { code: err.code, stack: err.stack } },
         `Redis is down, retrying in the background. Attempt Number ${counter}`,
       );
     });

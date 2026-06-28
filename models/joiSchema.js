@@ -123,6 +123,10 @@ const updateUserSchema = Joi.object({
   password: Joi.string().min(4).optional(),
 }).unknown(false);
 
+const imageGenerateParamSchema = Joi.object({
+  product_id: Joi.number().integer().positive().required(),
+});
+
 module.exports = {
   userSchema,
   storeSchema,
@@ -139,4 +143,5 @@ module.exports = {
   updateUserSchema,
   getAvailableProductsSchema,
   holdPickupWindowSchema,
+  imageGenerateParamSchema,
 };

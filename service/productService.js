@@ -1,4 +1,4 @@
-const { InternalServerError } = require("../utils/ExpressError");
+const { InternalServerError, NotFoundError } = require("../utils/ExpressError");
 const Product = require("../models/productModel");
 const validateStore = require("./validateStore");
 const logger = require("../utils/logger");
@@ -7,6 +7,7 @@ const {
   ItemNotFoundError,
 } = require("../errors/itemErrors");
 const { withCache } = require("../utils/withCache");
+const { generateImage } = require("../utils/runwareApi");
 
 const TTL = 60;
 
@@ -103,8 +104,26 @@ async function getAvailableProductsByStore(store_id, log = logger) {
   );
 }
 
+async function generateProductImage(product_id, log) {
+  let { rows } = await Product.getById(product_id);
+  if (rows.length === 0) {
+    throw new NotFoundError();
+  }
+  let name = rows.map((row) => row.name);
+  let prompt = `Generate a catalog image of ${name[0]}`;
+  let image = await generateImage(prompt, log);
+  if (image.length > 0) {
+    await Product.updateProductImage(product_id, image[0].taskUUID);
+    return image;
+  } else {
+    log.error("Runware API Error");
+    throw new InternalServerError();
+  }
+}
+
 module.exports = {
   checkProductStock,
   updateQtyinDb,
   getAvailableProductsByStore,
+  generateProductImage,
 };
