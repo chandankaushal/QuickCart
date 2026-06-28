@@ -17,6 +17,7 @@ const productRoutes = require("./routes/productRoutes.js");
 const orderRoutes = require("./routes/orderRoutes.js");
 const mcpRoutes = require("./routes/mcpRoutes.js");
 const paymentRoutes = require("./routes/paymentRoutes.js");
+const runwareRoutes = require("./routes/runwareRoutes.js");
 const errorHandler = require("./middleware/error.js");
 const logger = require("./utils/logger");
 const pinoMiddleware = require("./middleware/pinoLogger.js");
@@ -26,6 +27,9 @@ const limiter = require("./utils/rate-limit.js");
 const { startRedis } = require("./utils/redisDb.js");
 
 const app = express();
+// Trust the first proxy (e.g. load balancer / reverse proxy) so that
+// X-Forwarded-For is honored and express-rate-limit can identify clients.
+app.set("trust proxy", 1);
 app.use(
   cors({
     origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
@@ -69,6 +73,7 @@ app.use("/products", productRoutes);
 app.use("/orders", orderRoutes);
 app.use("/mcp", mcpRoutes);
 app.use("/payment", paymentRoutes);
+app.use("/runware", runwareRoutes);
 
 if (process.env.CLIENT_DIST_PATH) {
   const clientDist = path.resolve(process.env.CLIENT_DIST_PATH);

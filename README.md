@@ -1,6 +1,6 @@
 # QuickCart
 
-QuickCart is a Node.js + Express API for user accounts, store lookup, product availability checks, pickup order lifecycle management, and async integrations via AWS SQS.
+QuickCart is a Node.js + Express API for user accounts, store lookup, product availability checks, pickup order lifecycle management, AI-generated product catalog images (via Runware), and async integrations via AWS SQS.
 
 ## Frontend
 
@@ -23,7 +23,9 @@ Set `CLIENT_ORIGIN=http://localhost:5173` on the API for CORS. Optional: `CLIENT
 - Optional Stripe Checkout payment step on order creation, confirmed via webhook
 - Payment-timeout sweeper reclaims stock from orders left unpaid past the window
 - User profile updates are implemented with Joi validation, authorization checks, password hashing, and transactional DB updates
+- AI product image generation is implemented via Runware: a request queues an async image task (`202 Accepted`) and the result is delivered back through an authenticated webhook
 - Webhook and signup-email jobs are pushed to SQS and processed by the worker
+- Redis-backed caching is used for hot read paths (e.g. available products per store)
 - Test suite is green: **25/25 suites, 277/277 tests passing**
 
 ## Tech Stack
@@ -33,6 +35,8 @@ Set `CLIENT_ORIGIN=http://localhost:5173` on the API for CORS. Optional: `CLIENT
 - Joi validation
 - JWT auth (`jsonwebtoken`)
 - Stripe Checkout + webhooks (`stripe`)
+- Runware AI image generation (`@runware/sdk` / REST)
+- Redis caching (`redis`)
 - Pino logging + Datadog tracing (`dd-trace`)
 - AWS SQS + SES worker integration
 - Jest + Supertest
@@ -99,6 +103,17 @@ Create a `.env` file in project root with values matching your environment.
 - `STRIPE_API_KEY` — Stripe secret key used to create Checkout sessions
 - `STRIPE_WEBHOOK_ENDPOINT_SECRET` — signing secret for verifying webhook events
 
+### AI Image Generation (Runware)
+
+- `RUNWARE_API_URL` — Runware inference endpoint (e.g. `https://api.runware.ai/v1`)
+- `RUNWARE_API_KEY` — Runware API key (sent as `Authorization: Bearer`)
+- `RUNWARE_WEBHOOK_API_KEY` — shared secret expected as the `apiKey` query param on the Runware callback; the webhook handler rejects mismatches with `401`
+
+### Caching (Redis)
+
+- `REDIS_URL` — Redis connection string (e.g. `redis://localhost:6379`)
+- `ORDERS_CACHE_TTL`, `STORES_CACHE_TTL` — optional TTL overrides for cached read paths
+
 ### Payment Timeout Sweeper
 
 - `PAYMENT_TIMEOUT_MINUTES` (default `10`) — how long an order may stay `awaiting_payment` before it is cancelled and restocked
@@ -150,7 +165,7 @@ node index.js
 
 The docs are generated directly from [openapi.yaml](openapi.yaml), which defines:
 
-- All routes under `/`, `/monitoring`, `/users`, `/stores`, `/service_options`, `/products`, `/orders`.
+- All routes under `/`, `/monitoring`, `/users`, `/stores`, `/service_options`, `/products`, `/orders`, `/payment`, `/runware`.
 - Request body schemas (aligned with `models/joiSchema.js`).
 - Standard success/error response envelopes.
 - Authentication requirements using the `bearerAuth` security scheme.
@@ -190,6 +205,8 @@ npm run dev:worker # run the payment-timeout sweeper (node workers/paymentSweepe
 
 - `POST /products/checkAvailability`
 - `POST /products/available` (requires bearer token; body: `{ "store_id": <integer> }`)
+- `POST /products/:product_id/image` (validated params; queues an async Runware image task, returns `202 Accepted`)
+- `GET /products/:product_id/image` (validated params; returns the image status — `ready` / `pending` / `none` / `not_found` — and `image_url` once available)
 
 ### Service Options
 
@@ -220,6 +237,10 @@ Example request body:
 
 - `POST /payment/create-checkout-session` → creates a Stripe Checkout session and returns the payment URL
 - `POST /payment/webhook` → receives Stripe events (raw body, signature-verified). On `checkout.session.completed` with `payment_status = paid`, the associated order is moved from `awaiting_payment` to `brand_new`.
+
+### Image Generation (Runware)
+
+- `POST /runware/webhook?apiKey=<secret>` → receives async Runware image results. The `apiKey` query param is validated against `RUNWARE_WEBHOOK_API_KEY` (`401` on mismatch). The handler acks immediately with `200`, then persists each result (`image_url`, `image_id`, `seed`, `cost`) and logs any `errors`-shaped payloads.
 
 ## Request Validation
 
@@ -278,6 +299,25 @@ For order cancellation (`cancel_Order`):
 8. Optionally enqueue `ORDER_UPDATED` event when `needsWebhook=true`
 
 Order transitions (`transitionOrder`) continue to use authenticated owner checks and queue OMS update events through the transition service.
+
+## Image Generation Flow (Current Behavior)
+
+For product image generation (`POST /products/:product_id/image`):
+
+1. Validate `product_id` route param (Joi)
+2. Look up the product; `404` if it does not exist
+3. Build a catalog prompt from the product name and call the Runware API (`utils/runwareApi.js`)
+4. Persist the queued task (`taskUUID`) in `RUNWARE_DATA` and store `runware_task_id` on the product
+5. Respond `202 Accepted` — the image is produced asynchronously
+
+For result delivery (Runware webhook, `POST /runware/webhook`):
+
+1. Validate the `apiKey` query param against `RUNWARE_WEBHOOK_API_KEY` (`401` on mismatch)
+2. Ack immediately with `200` so Runware does not retry
+3. For `data`-shaped payloads, update the matching `RUNWARE_DATA` row with `image_url`, `image_id`, `seed`, and `cost`; log when no matching task is found
+4. For `errors`-shaped payloads, log the reported failure per task
+
+Clients poll `GET /products/:product_id/image` to read the current status (`pending` → `ready`) and the final `image_url`.
 
 ## Queue + Worker Behavior
 
@@ -343,4 +383,5 @@ Worker container is defined in `workers/Dockerfile`.
 - `package.json` defines `test`, `dev:api`, and `dev:worker` scripts
 - The payment sweeper worker lives under the gitignored `workers/` folder and is deployed separately; only its query model (`models/orderSweepModel.js`) is tracked
 - Payment follow-ups not yet implemented: refund-on-late-payment, a Stripe event-idempotency table, and moving hardcoded `localhost:5173` checkout URLs to env vars
+- Image generation follow-ups: the Runware `webhookURL` base is currently hardcoded in `utils/runwareApi.js` (should move to an env var), and there is no idempotency/"already pending" guard to prevent re-queueing a task for the same product
 - Keep secrets out of version-controlled files and environment manifests

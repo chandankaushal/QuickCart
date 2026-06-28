@@ -12,8 +12,8 @@ function validateBody(schema) {
         new ExpressError(
           error.details.map((d) => d.message.replace(/"/g, "")).join(", "), // Stripping \ in joi error
           400,
-          "VALIDATION_ERROR"
-        )
+          "VALIDATION_ERROR",
+        ),
       );
     }
 
@@ -34,8 +34,8 @@ function validateQuery(schema) {
         new ExpressError(
           error.details.map((d) => d.message.replace(/"/g, "")).join(", "),
           400,
-          "INVALID_QUERY"
-        )
+          "INVALID_QUERY",
+        ),
       );
     }
 
@@ -44,4 +44,23 @@ function validateQuery(schema) {
   };
 }
 
-module.exports = { validateBody, validateQuery };
+function validateParams(schema) {
+  return (req, res, next) => {
+    const { error, value } = schema.validate(req.params);
+
+    if (error) {
+      return next(
+        new ExpressError(
+          error.details.map((d) => d.message.replace(/"/g, "")).join(", "),
+          400,
+          "INVALID_PARAMS",
+        ),
+      );
+    }
+
+    req.params = value;
+    next();
+  };
+}
+
+module.exports = { validateBody, validateQuery, validateParams };

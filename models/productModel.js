@@ -3,6 +3,11 @@ const pool = require("../db");
 const PRODUCT_TABLE = `"quickcart".products`;
 
 const Product = {
+  async getById(id) {
+    const sql = `SELECT name FROM ${PRODUCT_TABLE} WHERE product_id = $1`;
+    const values = [id];
+    return await pool.query(sql, values);
+  },
   async getProductByUpc(upc, store_id, client = null) {
     const upcArray = Array.isArray(upc) ? upc : [upc]; // if we get single upc then we pass as [upc]
 
@@ -80,6 +85,21 @@ const Product = {
     params.push(product_ids); // Pushing upcs for where clause in params
     const runner = client || pool;
     return await runner.query(finalStatement, params);
+  },
+  async updateProductImage(id, task_id) {
+    let sql = `UPDATE ${PRODUCT_TABLE} SET runware_task_id = $1 WHERE product_id = $2`;
+    let values = [task_id, id];
+
+    return await pool.query(sql, values);
+  },
+  async getImageById(id) {
+    const sql = `
+      SELECT p.product_id, p.name, p.runware_task_id AS task_id, r.image_url
+      FROM ${PRODUCT_TABLE} p
+      LEFT JOIN quickcart.RUNWARE_DATA r ON r.task_id = p.runware_task_id
+      WHERE p.product_id = $1`;
+    const values = [id];
+    return await pool.query(sql, values);
   },
 };
 
