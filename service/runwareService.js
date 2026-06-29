@@ -25,10 +25,11 @@ async function handleRunwareWebhook(payload, log) {
         item.seed,
         item.cost,
       );
+      // TO-DO This might be an issue if the DB does not have that task
       if (response.rowCount === 0) {
-        log.error(
+        log.warn(
           { task_id: item.taskUUID },
-          "This task was not found in the db",
+          "Nothing updated in the db for this task",
         );
       }
     }),
