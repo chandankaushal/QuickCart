@@ -2,18 +2,6 @@
 
 QuickCart is a Node.js + Express API for user accounts, store lookup, product availability checks, pickup order lifecycle management, AI-generated product catalog images (via Runware), and async integrations via AWS SQS.
 
-## Frontend
-
-The React UI lives in a separate repo: **`../Quickcart-FE`** (sibling folder under `Projects/`).
-
-```bash
-cd ../Quickcart-FE
-npm install
-npm run dev
-```
-
-Set `CLIENT_ORIGIN=http://localhost:5173` on the API for CORS. Optional: `CLIENT_DIST_PATH` to serve a production build from the API.
-
 ## Current Project Status
 
 - API server is implemented and runs from `index.js`

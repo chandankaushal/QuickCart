@@ -66,17 +66,15 @@ describe("Runware Service - handleRunwareWebhook", () => {
 
     await handleRunwareWebhook(payload, mockLogger);
 
-    expect(mockLogger.error).toHaveBeenCalledWith(
+    expect(mockLogger.warn).toHaveBeenCalledWith(
       { task_id: "missing-task" },
-      "This task was not found in the db",
+      "Nothing updated in the db for this task",
     );
   });
 
   it("should log errors and not persist for an errors-shaped payload", async () => {
     const payload = {
-      errors: [
-        { taskUUID: "task-err", code: "someError", message: "boom" },
-      ],
+      errors: [{ taskUUID: "task-err", code: "someError", message: "boom" }],
     };
 
     await handleRunwareWebhook(payload, mockLogger);
