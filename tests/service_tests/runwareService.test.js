@@ -66,7 +66,7 @@ describe("Runware Service - handleRunwareWebhook", () => {
 
     await handleRunwareWebhook(payload, mockLogger);
 
-    expect(mockLogger.error).toHaveBeenCalledWith(
+    expect(mockLogger.warn).toHaveBeenCalledWith(
       { task_id: "missing-task" },
       "Nothing updated in the db for this task",
     );
