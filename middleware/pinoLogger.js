@@ -24,7 +24,7 @@ const pinoMiddleware = pinoHttp({
   },
 
   customSuccessMessage: (req, res) =>
-    `Request completed: ${req.id} ${req.method} ${req.url} - Status ${res.statusCode}`, // need to change this
+    `Request completed: ${req.id} ${req.method} ${req.path} - Status ${res.statusCode}`, // need to change this
 });
 
 module.exports = pinoMiddleware;
