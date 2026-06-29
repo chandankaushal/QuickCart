@@ -1,6 +1,6 @@
 require("dotenv").config();
 const crypto = require("crypto");
-const { InternalServerError } = require("./ExpressError");
+const { InternalServerError, ExpressError } = require("./ExpressError");
 const logger = require("./logger");
 const Runware = require("../models/runwareModel");
 
@@ -39,7 +39,7 @@ async function generateImage(prompt, log = logger) {
         },
         body,
       });
-
+      if (response.ok) break;
       if (response.status != 429 && response.status != 503) {
         break;
       }
@@ -53,6 +53,10 @@ async function generateImage(prompt, log = logger) {
     }
 
     let result = await response.json();
+    if (!Array.isArray(result.data)) {
+      log.error({ errors: result.errors }, "Runware returned no data");
+      throw new InternalServerError();
+    }
     await Promise.all(
       result.data.map(async (task) => {
         await Runware.addTask(task.taskUUID, task.taskType);
@@ -60,6 +64,7 @@ async function generateImage(prompt, log = logger) {
     );
     return result.data;
   } catch (err) {
+    if (err instanceof ExpressError) throw err;
     log.error({ err }, "Runware API Error");
     throw new InternalServerError();
   }
